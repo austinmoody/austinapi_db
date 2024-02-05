@@ -18,5 +18,5 @@ END;
 $$ LANGUAGE plpgsql;
 
 CREATE TRIGGER preparedness_spo2_trigger
-    BEFORE UPDATE ON preparedness
+    BEFORE UPDATE ON spo2
     FOR EACH ROW EXECUTE FUNCTION update_spo2_updated_timestamp();

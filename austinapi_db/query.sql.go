@@ -11,6 +11,27 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const addHeartRate = `-- name: AddHeartRate :exec
+INSERT INTO heartrate (date, low, high, average) VALUES ($1, $2, $3, $4) ON CONFLICT (date) DO UPDATE SET low = EXCLUDED.low, high = EXCLUDED.high, average = EXCLUDED.average
+`
+
+type AddHeartRateParams struct {
+	Date    pgtype.Date
+	Low     pgtype.Int4
+	High    pgtype.Int4
+	Average pgtype.Int4
+}
+
+func (q *Queries) AddHeartRate(ctx context.Context, arg AddHeartRateParams) error {
+	_, err := q.db.Exec(ctx, addHeartRate,
+		arg.Date,
+		arg.Low,
+		arg.High,
+		arg.Average,
+	)
+	return err
+}
+
 const addPreparedness = `-- name: AddPreparedness :exec
 INSERT INTO preparedness (date, rating) VALUES ($1, $2) ON CONFLICT (date) DO UPDATE SET rating = EXCLUDED.rating
 `
@@ -79,5 +100,19 @@ type AddSpo2Params struct {
 
 func (q *Queries) AddSpo2(ctx context.Context, arg AddSpo2Params) error {
 	_, err := q.db.Exec(ctx, addSpo2, arg.Date, arg.AverageSpo2)
+	return err
+}
+
+const addStress = `-- name: AddStress :exec
+INSERT INTO stress (date, high_stress_duration) VALUES ($1, $2) ON CONFLICT (date) DO UPDATE SET high_stress_duration = EXCLUDED.high_stress_duration
+`
+
+type AddStressParams struct {
+	Date               pgtype.Date
+	HighStressDuration pgtype.Int4
+}
+
+func (q *Queries) AddStress(ctx context.Context, arg AddStressParams) error {
+	_, err := q.db.Exec(ctx, addStress, arg.Date, arg.HighStressDuration)
 	return err
 }

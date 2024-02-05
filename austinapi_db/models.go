@@ -8,6 +8,16 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+type Heartrate struct {
+	ID               int32
+	Date             pgtype.Date
+	High             pgtype.Int4
+	Low              pgtype.Int4
+	Average          pgtype.Int4
+	CreatedTimestamp pgtype.Timestamp
+	UpdatedTimestamp pgtype.Timestamp
+}
+
 type Preparedness struct {
 	ID               int32
 	Date             pgtype.Date
@@ -31,4 +41,12 @@ type Spo2 struct {
 	AverageSpo2      pgtype.Float8
 	CreatedTimestamp pgtype.Timestamp
 	UpdatedTimestamp pgtype.Timestamp
+}
+
+type Stress struct {
+	ID                 int32
+	Date               pgtype.Date
+	HighStressDuration pgtype.Int4
+	CreatedTimestamp   pgtype.Timestamp
+	UpdatedTimestamp   pgtype.Timestamp
 }

@@ -18,5 +18,5 @@ END;
 $$ LANGUAGE plpgsql;
 
 CREATE TRIGGER preparedness_stress_trigger
-    BEFORE UPDATE ON preparedness
+    BEFORE UPDATE ON stress
     FOR EACH ROW EXECUTE FUNCTION update_stress_updated_timestamp();

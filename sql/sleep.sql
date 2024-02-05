@@ -3,9 +3,10 @@ create table sleep
     id SERIAL PRIMARY KEY,
     date DATE,
     rating INTEGER,
+    total_duration BIGINT,
+    number_sleeps INTEGER,
     created_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_timestamp TIMESTAMP,
-    total_duration BIGINT
+    updated_timestamp TIMESTAMP
 );
 
 CREATE INDEX idx_sleep_date ON sleep(date);

@@ -26,7 +26,7 @@ func main() {
 
 	dt := time.Now()
 
-	params := austinapi_db.InsertSleepRatingParams{
+	params := austinapi_db.AddSleepRatingParams{
 		Date: pgtype.Date{
 			Time:             dt,
 			InfinityModifier: 0,
@@ -38,12 +38,12 @@ func main() {
 		},
 	}
 
-	err = apiDb.InsertSleepRating(ctx, params)
+	err = apiDb.AddSleepRating(ctx, params)
 	if err != nil {
 		log.Fatalf("Insert error: %v", err)
 	}
 
-	durationParams := austinapi_db.InsertSleepDurationParams{
+	durationParams := austinapi_db.AddSleepDurationParams{
 		Date: pgtype.Date{
 			Time:  dt,
 			Valid: true,
@@ -54,7 +54,7 @@ func main() {
 		},
 	}
 
-	err = apiDb.InsertSleepDuration(ctx, durationParams)
+	err = apiDb.AddSleepDuration(ctx, durationParams)
 	if err != nil {
 		log.Fatalf("Insert error: %v", err)
 	}

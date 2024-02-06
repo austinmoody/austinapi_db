@@ -26,7 +26,7 @@ func main() {
 
 	dt := time.Now()
 
-	params := austinapi_db.AddSleepRatingParams{
+	params := austinapi_db.SaveSleepRatingParams{
 		Date: pgtype.Date{
 			Time:             dt,
 			InfinityModifier: 0,
@@ -38,12 +38,12 @@ func main() {
 		},
 	}
 
-	err = apiDb.AddSleepRating(ctx, params)
+	err = apiDb.SaveSleepRating(ctx, params)
 	if err != nil {
 		log.Fatalf("Insert error: %v", err)
 	}
 
-	durationParams := austinapi_db.AddSleepDurationParams{
+	durationParams := austinapi_db.SaveSleepDurationParams{
 		Date: pgtype.Date{
 			Time:  dt,
 			Valid: true,
@@ -54,10 +54,20 @@ func main() {
 		},
 	}
 
-	err = apiDb.AddSleepDuration(ctx, durationParams)
+	err = apiDb.SaveSleepDuration(ctx, durationParams)
 	if err != nil {
 		log.Fatalf("Insert error: %v", err)
 	}
+
+	mySleep, err := apiDb.GetSleepByDate(ctx, pgtype.Date{
+		Time:  dt,
+		Valid: true,
+	})
+	if err != nil {
+		log.Fatalf("Error Getting Sleep By Date: %v", err)
+	}
+
+	log.Printf("\nSleep Rating: %v\n", mySleep.Rating.Int32)
 }
 
 func GetDatabaseConnectionString() string {

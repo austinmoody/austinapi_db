@@ -30,9 +30,10 @@ type Sleep struct {
 	ID               int32
 	Date             pgtype.Date
 	Rating           pgtype.Int4
+	TotalDuration    pgtype.Int8
+	NumberSleeps     pgtype.Int4
 	CreatedTimestamp pgtype.Timestamp
 	UpdatedTimestamp pgtype.Timestamp
-	TotalDuration    pgtype.Int8
 }
 
 type Spo2 struct {

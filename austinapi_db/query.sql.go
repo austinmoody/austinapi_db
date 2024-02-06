@@ -11,19 +11,57 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-const addHeartRate = `-- name: AddHeartRate :exec
+const getSleep = `-- name: GetSleep :one
+SELECT id, date, rating, total_duration, number_sleeps, created_timestamp, updated_timestamp FROM sleep WHERE id = $1
+`
+
+func (q *Queries) GetSleep(ctx context.Context, id int32) (Sleep, error) {
+	row := q.db.QueryRow(ctx, getSleep, id)
+	var i Sleep
+	err := row.Scan(
+		&i.ID,
+		&i.Date,
+		&i.Rating,
+		&i.TotalDuration,
+		&i.NumberSleeps,
+		&i.CreatedTimestamp,
+		&i.UpdatedTimestamp,
+	)
+	return i, err
+}
+
+const getSleepByDate = `-- name: GetSleepByDate :one
+SELECT id, date, rating, total_duration, number_sleeps, created_timestamp, updated_timestamp FROM sleep WHERE date = $1
+`
+
+func (q *Queries) GetSleepByDate(ctx context.Context, date pgtype.Date) (Sleep, error) {
+	row := q.db.QueryRow(ctx, getSleepByDate, date)
+	var i Sleep
+	err := row.Scan(
+		&i.ID,
+		&i.Date,
+		&i.Rating,
+		&i.TotalDuration,
+		&i.NumberSleeps,
+		&i.CreatedTimestamp,
+		&i.UpdatedTimestamp,
+	)
+	return i, err
+}
+
+const saveHeartRate = `-- name: SaveHeartRate :exec
 INSERT INTO heartrate (date, low, high, average) VALUES ($1, $2, $3, $4) ON CONFLICT (date) DO UPDATE SET low = EXCLUDED.low, high = EXCLUDED.high, average = EXCLUDED.average
 `
 
-type AddHeartRateParams struct {
+type SaveHeartRateParams struct {
 	Date    pgtype.Date
 	Low     pgtype.Int4
 	High    pgtype.Int4
 	Average pgtype.Int4
 }
 
-func (q *Queries) AddHeartRate(ctx context.Context, arg AddHeartRateParams) error {
-	_, err := q.db.Exec(ctx, addHeartRate,
+func (q *Queries) SaveHeartRate(ctx context.Context, arg SaveHeartRateParams) error {
+	_, err := q.db.Exec(ctx, saveHeartRate,
 		arg.Date,
 		arg.Low,
 		arg.High,
@@ -32,87 +70,89 @@ func (q *Queries) AddHeartRate(ctx context.Context, arg AddHeartRateParams) erro
 	return err
 }
 
-const addPreparedness = `-- name: AddPreparedness :exec
+const savePreparedness = `-- name: SavePreparedness :exec
 INSERT INTO preparedness (date, rating) VALUES ($1, $2) ON CONFLICT (date) DO UPDATE SET rating = EXCLUDED.rating
 `
 
-type AddPreparednessParams struct {
+type SavePreparednessParams struct {
 	Date   pgtype.Date
 	Rating pgtype.Int4
 }
 
-func (q *Queries) AddPreparedness(ctx context.Context, arg AddPreparednessParams) error {
-	_, err := q.db.Exec(ctx, addPreparedness, arg.Date, arg.Rating)
+func (q *Queries) SavePreparedness(ctx context.Context, arg SavePreparednessParams) error {
+	_, err := q.db.Exec(ctx, savePreparedness, arg.Date, arg.Rating)
 	return err
 }
 
-const addSleep = `-- name: AddSleep :exec
+const saveSleep = `-- name: SaveSleep :exec
 INSERT INTO sleep (date, rating, total_duration) VALUES ($1, $2, $3) ON CONFLICT (date) DO UPDATE SET total_duration = EXCLUDED.total_duration, rating = EXCLUDED.rating
 `
 
-type AddSleepParams struct {
+type SaveSleepParams struct {
 	Date          pgtype.Date
 	Rating        pgtype.Int4
 	TotalDuration pgtype.Int8
 }
 
-func (q *Queries) AddSleep(ctx context.Context, arg AddSleepParams) error {
-	_, err := q.db.Exec(ctx, addSleep, arg.Date, arg.Rating, arg.TotalDuration)
+func (q *Queries) SaveSleep(ctx context.Context, arg SaveSleepParams) error {
+	_, err := q.db.Exec(ctx, saveSleep, arg.Date, arg.Rating, arg.TotalDuration)
 	return err
 }
 
-const addSleepDuration = `-- name: AddSleepDuration :exec
+const saveSleepDuration = `-- name: SaveSleepDuration :exec
 INSERT INTO sleep (date, total_duration) VALUES ($1, $2) ON CONFLICT (date) DO UPDATE SET total_duration = EXCLUDED.total_duration
 `
 
-type AddSleepDurationParams struct {
+type SaveSleepDurationParams struct {
 	Date          pgtype.Date
 	TotalDuration pgtype.Int8
 }
 
-func (q *Queries) AddSleepDuration(ctx context.Context, arg AddSleepDurationParams) error {
-	_, err := q.db.Exec(ctx, addSleepDuration, arg.Date, arg.TotalDuration)
+func (q *Queries) SaveSleepDuration(ctx context.Context, arg SaveSleepDurationParams) error {
+	_, err := q.db.Exec(ctx, saveSleepDuration, arg.Date, arg.TotalDuration)
 	return err
 }
 
-const addSleepRating = `-- name: AddSleepRating :exec
+const saveSleepRating = `-- name: SaveSleepRating :exec
+
 INSERT INTO sleep (date, rating) VALUES ($1, $2) ON CONFLICT (date) DO UPDATE SET rating = EXCLUDED.rating
 `
 
-type AddSleepRatingParams struct {
+type SaveSleepRatingParams struct {
 	Date   pgtype.Date
 	Rating pgtype.Int4
 }
 
-func (q *Queries) AddSleepRating(ctx context.Context, arg AddSleepRatingParams) error {
-	_, err := q.db.Exec(ctx, addSleepRating, arg.Date, arg.Rating)
+// TODO - Rethink naming here.  Add indicates we'd be potentially adding to what is there? maybe thereis some way w/ insert to add?  So if we insert a duration we'd add to what is there and increment
+func (q *Queries) SaveSleepRating(ctx context.Context, arg SaveSleepRatingParams) error {
+	_, err := q.db.Exec(ctx, saveSleepRating, arg.Date, arg.Rating)
 	return err
 }
 
-const addSpo2 = `-- name: AddSpo2 :exec
+const saveSpo2 = `-- name: SaveSpo2 :exec
 INSERT INTO spo2 (date, average_spo2) VALUES ($1, $2) ON CONFLICT (date) DO UPDATE SET average_spo2 = EXCLUDED.average_spo2
 `
 
-type AddSpo2Params struct {
+type SaveSpo2Params struct {
 	Date        pgtype.Date
 	AverageSpo2 pgtype.Float8
 }
 
-func (q *Queries) AddSpo2(ctx context.Context, arg AddSpo2Params) error {
-	_, err := q.db.Exec(ctx, addSpo2, arg.Date, arg.AverageSpo2)
+func (q *Queries) SaveSpo2(ctx context.Context, arg SaveSpo2Params) error {
+	_, err := q.db.Exec(ctx, saveSpo2, arg.Date, arg.AverageSpo2)
 	return err
 }
 
-const addStress = `-- name: AddStress :exec
+const saveStress = `-- name: SaveStress :exec
 INSERT INTO stress (date, high_stress_duration) VALUES ($1, $2) ON CONFLICT (date) DO UPDATE SET high_stress_duration = EXCLUDED.high_stress_duration
 `
 
-type AddStressParams struct {
+type SaveStressParams struct {
 	Date               pgtype.Date
 	HighStressDuration pgtype.Int4
 }
 
-func (q *Queries) AddStress(ctx context.Context, arg AddStressParams) error {
-	_, err := q.db.Exec(ctx, addStress, arg.Date, arg.HighStressDuration)
+func (q *Queries) SaveStress(ctx context.Context, arg SaveStressParams) error {
+	_, err := q.db.Exec(ctx, saveStress, arg.Date, arg.HighStressDuration)
 	return err
 }

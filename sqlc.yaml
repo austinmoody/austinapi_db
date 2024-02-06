@@ -8,3 +8,9 @@ sql:
         package: "austinapi_db"
         out: "austinapi_db"
         sql_package: "pgx/v5"
+        emit_pointers_for_null_types: true
+        overrides:
+          - db_type: "date"
+            go_type: "time.Time"
+          - db_type: "pg_catalog.timestamp"
+            go_type: "time.Time"

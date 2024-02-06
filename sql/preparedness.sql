@@ -1,9 +1,9 @@
 CREATE TABLE preparedness (
     id SERIAL PRIMARY KEY ,
-    date DATE,
-    rating int,
-    created_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_timestamp TIMESTAMP
+    date DATE NOT NULL,
+    rating INTEGER NOT NULL,
+    created_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
 );
 CREATE INDEX idx_preparedness_date ON preparedness(date);
 ALTER TABLE preparedness ADD CONSTRAINT unique_preparedness_date UNIQUE(date);

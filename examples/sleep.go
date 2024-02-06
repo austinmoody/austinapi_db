@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"github.com/austinmoody/austinapi_db/austinapi_db"
 	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/joho/godotenv"
 	"log"
+	"math/rand"
 	"os"
 	"time"
 )
@@ -24,50 +24,33 @@ func main() {
 
 	apiDb := austinapi_db.New(conn)
 
-	dt := time.Now()
+	// Loop 5 times, randomly generate data
+	source := rand.NewSource(time.Now().UnixNano())
+	rng := rand.New(source)
+	for i := 0; i < 5; i++ {
+		randomHours := rng.Int()
 
-	params := austinapi_db.SaveSleepRatingParams{
-		Date: pgtype.Date{
-			Time:             dt,
-			InfinityModifier: 0,
-			Valid:            true,
-		},
-		Rating: pgtype.Int4{
-			Int32: 55,
-			Valid: true,
-		},
+		sleepParams := austinapi_db.SaveSleepParams{
+			Date:          time.Now().Add(time.Hour * time.Duration(randomHours)),
+			Rating:        rng.Int31(),
+			TotalDuration: rng.Int31(),
+			NumberSleeps:  rng.Int31(),
+		}
+
+		err = apiDb.SaveSleep(ctx, sleepParams)
+		if err != nil {
+			log.Fatalf("Insert error: %v", err)
+		}
+
+		mySleep, err := apiDb.GetSleepByDate(ctx, sleepParams.Date)
+		if err != nil {
+			log.Fatalf("Error Getting Sleep By Date: %v", err)
+		}
+
+		log.Printf("\nSleep Rating: %v\n", mySleep.Rating)
+
 	}
 
-	err = apiDb.SaveSleepRating(ctx, params)
-	if err != nil {
-		log.Fatalf("Insert error: %v", err)
-	}
-
-	durationParams := austinapi_db.SaveSleepDurationParams{
-		Date: pgtype.Date{
-			Time:  dt,
-			Valid: true,
-		},
-		TotalDuration: pgtype.Int8{
-			Int64: 123,
-			Valid: true,
-		},
-	}
-
-	err = apiDb.SaveSleepDuration(ctx, durationParams)
-	if err != nil {
-		log.Fatalf("Insert error: %v", err)
-	}
-
-	mySleep, err := apiDb.GetSleepByDate(ctx, pgtype.Date{
-		Time:  dt,
-		Valid: true,
-	})
-	if err != nil {
-		log.Fatalf("Error Getting Sleep By Date: %v", err)
-	}
-
-	log.Printf("\nSleep Rating: %v\n", mySleep.Rating.Int32)
 }
 
 func GetDatabaseConnectionString() string {

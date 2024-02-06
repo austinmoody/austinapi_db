@@ -1,12 +1,6 @@
 -- name: SaveSleep :exec
-INSERT INTO sleep (date, rating, total_duration) VALUES ($1, $2, $3) ON CONFLICT (date) DO UPDATE SET total_duration = EXCLUDED.total_duration, rating = EXCLUDED.rating;
+INSERT INTO sleep (date, rating, total_duration, number_sleeps) VALUES ($1, $2, $3, $4) ON CONFLICT (date) DO UPDATE SET total_duration = EXCLUDED.total_duration, rating = EXCLUDED.rating, number_sleeps = EXCLUDED.number_sleeps;
 -- TODO - Rethink naming here.  Add indicates we'd be potentially adding to what is there? maybe thereis some way w/ insert to add?  So if we insert a duration we'd add to what is there and increment
-
--- name: SaveSleepRating :exec
-INSERT INTO sleep (date, rating) VALUES ($1, $2) ON CONFLICT (date) DO UPDATE SET rating = EXCLUDED.rating;
-
--- name: SaveSleepDuration :exec
-INSERT INTO sleep (date, total_duration) VALUES ($1, $2) ON CONFLICT (date) DO UPDATE SET total_duration = EXCLUDED.total_duration;
 
 -- name: GetSleep :one
 SELECT * FROM sleep WHERE id = $1;

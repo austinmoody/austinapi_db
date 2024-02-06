@@ -5,49 +5,49 @@
 package austinapi_db
 
 import (
-	"github.com/jackc/pgx/v5/pgtype"
+	"time"
 )
 
 type Heartrate struct {
 	ID               int32
-	Date             pgtype.Date
-	High             pgtype.Int4
-	Low              pgtype.Int4
-	Average          pgtype.Int4
-	CreatedTimestamp pgtype.Timestamp
-	UpdatedTimestamp pgtype.Timestamp
+	Date             time.Time
+	High             int32
+	Low              int32
+	Average          int32
+	CreatedTimestamp time.Time
+	UpdatedTimestamp time.Time
 }
 
 type Preparedness struct {
 	ID               int32
-	Date             pgtype.Date
-	Rating           pgtype.Int4
-	CreatedTimestamp pgtype.Timestamp
-	UpdatedTimestamp pgtype.Timestamp
+	Date             time.Time
+	Rating           int32
+	CreatedTimestamp time.Time
+	UpdatedTimestamp time.Time
 }
 
 type Sleep struct {
 	ID               int32
-	Date             pgtype.Date
-	Rating           pgtype.Int4
-	TotalDuration    pgtype.Int8
-	NumberSleeps     pgtype.Int4
-	CreatedTimestamp pgtype.Timestamp
-	UpdatedTimestamp pgtype.Timestamp
+	Date             time.Time
+	Rating           int32
+	TotalDuration    int32
+	NumberSleeps     int32
+	CreatedTimestamp time.Time
+	UpdatedTimestamp time.Time
 }
 
 type Spo2 struct {
 	ID               int32
-	Date             pgtype.Date
-	AverageSpo2      pgtype.Float8
-	CreatedTimestamp pgtype.Timestamp
-	UpdatedTimestamp pgtype.Timestamp
+	Date             time.Time
+	AverageSpo2      float64
+	CreatedTimestamp time.Time
+	UpdatedTimestamp time.Time
 }
 
 type Stress struct {
 	ID                 int32
-	Date               pgtype.Date
-	HighStressDuration pgtype.Int4
-	CreatedTimestamp   pgtype.Timestamp
-	UpdatedTimestamp   pgtype.Timestamp
+	Date               time.Time
+	HighStressDuration int32
+	CreatedTimestamp   time.Time
+	UpdatedTimestamp   time.Time
 }

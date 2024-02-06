@@ -7,14 +7,15 @@ package austinapi_db
 
 import (
 	"context"
-
-	"github.com/jackc/pgx/v5/pgtype"
+	"time"
 )
 
 const getSleep = `-- name: GetSleep :one
+
 SELECT id, date, rating, total_duration, number_sleeps, created_timestamp, updated_timestamp FROM sleep WHERE id = $1
 `
 
+// TODO - Rethink naming here.  Add indicates we'd be potentially adding to what is there? maybe thereis some way w/ insert to add?  So if we insert a duration we'd add to what is there and increment
 func (q *Queries) GetSleep(ctx context.Context, id int32) (Sleep, error) {
 	row := q.db.QueryRow(ctx, getSleep, id)
 	var i Sleep
@@ -34,7 +35,7 @@ const getSleepByDate = `-- name: GetSleepByDate :one
 SELECT id, date, rating, total_duration, number_sleeps, created_timestamp, updated_timestamp FROM sleep WHERE date = $1
 `
 
-func (q *Queries) GetSleepByDate(ctx context.Context, date pgtype.Date) (Sleep, error) {
+func (q *Queries) GetSleepByDate(ctx context.Context, date time.Time) (Sleep, error) {
 	row := q.db.QueryRow(ctx, getSleepByDate, date)
 	var i Sleep
 	err := row.Scan(
@@ -54,10 +55,10 @@ INSERT INTO heartrate (date, low, high, average) VALUES ($1, $2, $3, $4) ON CONF
 `
 
 type SaveHeartRateParams struct {
-	Date    pgtype.Date
-	Low     pgtype.Int4
-	High    pgtype.Int4
-	Average pgtype.Int4
+	Date    time.Time
+	Low     int32
+	High    int32
+	Average int32
 }
 
 func (q *Queries) SaveHeartRate(ctx context.Context, arg SaveHeartRateParams) error {
@@ -75,8 +76,8 @@ INSERT INTO preparedness (date, rating) VALUES ($1, $2) ON CONFLICT (date) DO UP
 `
 
 type SavePreparednessParams struct {
-	Date   pgtype.Date
-	Rating pgtype.Int4
+	Date   time.Time
+	Rating int32
 }
 
 func (q *Queries) SavePreparedness(ctx context.Context, arg SavePreparednessParams) error {
@@ -85,47 +86,23 @@ func (q *Queries) SavePreparedness(ctx context.Context, arg SavePreparednessPara
 }
 
 const saveSleep = `-- name: SaveSleep :exec
-INSERT INTO sleep (date, rating, total_duration) VALUES ($1, $2, $3) ON CONFLICT (date) DO UPDATE SET total_duration = EXCLUDED.total_duration, rating = EXCLUDED.rating
+INSERT INTO sleep (date, rating, total_duration, number_sleeps) VALUES ($1, $2, $3, $4) ON CONFLICT (date) DO UPDATE SET total_duration = EXCLUDED.total_duration, rating = EXCLUDED.rating, number_sleeps = EXCLUDED.number_sleeps
 `
 
 type SaveSleepParams struct {
-	Date          pgtype.Date
-	Rating        pgtype.Int4
-	TotalDuration pgtype.Int8
+	Date          time.Time
+	Rating        int32
+	TotalDuration int32
+	NumberSleeps  int32
 }
 
 func (q *Queries) SaveSleep(ctx context.Context, arg SaveSleepParams) error {
-	_, err := q.db.Exec(ctx, saveSleep, arg.Date, arg.Rating, arg.TotalDuration)
-	return err
-}
-
-const saveSleepDuration = `-- name: SaveSleepDuration :exec
-INSERT INTO sleep (date, total_duration) VALUES ($1, $2) ON CONFLICT (date) DO UPDATE SET total_duration = EXCLUDED.total_duration
-`
-
-type SaveSleepDurationParams struct {
-	Date          pgtype.Date
-	TotalDuration pgtype.Int8
-}
-
-func (q *Queries) SaveSleepDuration(ctx context.Context, arg SaveSleepDurationParams) error {
-	_, err := q.db.Exec(ctx, saveSleepDuration, arg.Date, arg.TotalDuration)
-	return err
-}
-
-const saveSleepRating = `-- name: SaveSleepRating :exec
-
-INSERT INTO sleep (date, rating) VALUES ($1, $2) ON CONFLICT (date) DO UPDATE SET rating = EXCLUDED.rating
-`
-
-type SaveSleepRatingParams struct {
-	Date   pgtype.Date
-	Rating pgtype.Int4
-}
-
-// TODO - Rethink naming here.  Add indicates we'd be potentially adding to what is there? maybe thereis some way w/ insert to add?  So if we insert a duration we'd add to what is there and increment
-func (q *Queries) SaveSleepRating(ctx context.Context, arg SaveSleepRatingParams) error {
-	_, err := q.db.Exec(ctx, saveSleepRating, arg.Date, arg.Rating)
+	_, err := q.db.Exec(ctx, saveSleep,
+		arg.Date,
+		arg.Rating,
+		arg.TotalDuration,
+		arg.NumberSleeps,
+	)
 	return err
 }
 
@@ -134,8 +111,8 @@ INSERT INTO spo2 (date, average_spo2) VALUES ($1, $2) ON CONFLICT (date) DO UPDA
 `
 
 type SaveSpo2Params struct {
-	Date        pgtype.Date
-	AverageSpo2 pgtype.Float8
+	Date        time.Time
+	AverageSpo2 float64
 }
 
 func (q *Queries) SaveSpo2(ctx context.Context, arg SaveSpo2Params) error {
@@ -148,8 +125,8 @@ INSERT INTO stress (date, high_stress_duration) VALUES ($1, $2) ON CONFLICT (dat
 `
 
 type SaveStressParams struct {
-	Date               pgtype.Date
-	HighStressDuration pgtype.Int4
+	Date               time.Time
+	HighStressDuration int32
 }
 
 func (q *Queries) SaveStress(ctx context.Context, arg SaveStressParams) error {

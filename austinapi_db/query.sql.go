@@ -12,7 +12,7 @@ import (
 
 const getSleep = `-- name: GetSleep :one
 
-SELECT id, date, rating, total_duration, number_sleeps, created_timestamp, updated_timestamp FROM sleep WHERE id = $1
+SELECT id, date, rating, total_sleep, deep_sleep, light_sleep, rem_sleep, created_timestamp, updated_timestamp FROM sleep WHERE id = $1
 `
 
 // TODO - Rethink naming here.  Add indicates we'd be potentially adding to what is there? maybe thereis some way w/ insert to add?  So if we insert a duration we'd add to what is there and increment
@@ -23,8 +23,10 @@ func (q *Queries) GetSleep(ctx context.Context, id int32) (Sleep, error) {
 		&i.ID,
 		&i.Date,
 		&i.Rating,
-		&i.TotalDuration,
-		&i.NumberSleeps,
+		&i.TotalSleep,
+		&i.DeepSleep,
+		&i.LightSleep,
+		&i.RemSleep,
 		&i.CreatedTimestamp,
 		&i.UpdatedTimestamp,
 	)
@@ -32,7 +34,7 @@ func (q *Queries) GetSleep(ctx context.Context, id int32) (Sleep, error) {
 }
 
 const getSleepByDate = `-- name: GetSleepByDate :one
-SELECT id, date, rating, total_duration, number_sleeps, created_timestamp, updated_timestamp FROM sleep WHERE date = $1
+SELECT id, date, rating, total_sleep, deep_sleep, light_sleep, rem_sleep, created_timestamp, updated_timestamp FROM sleep WHERE date = $1
 `
 
 func (q *Queries) GetSleepByDate(ctx context.Context, date time.Time) (Sleep, error) {
@@ -42,8 +44,10 @@ func (q *Queries) GetSleepByDate(ctx context.Context, date time.Time) (Sleep, er
 		&i.ID,
 		&i.Date,
 		&i.Rating,
-		&i.TotalDuration,
-		&i.NumberSleeps,
+		&i.TotalSleep,
+		&i.DeepSleep,
+		&i.LightSleep,
+		&i.RemSleep,
 		&i.CreatedTimestamp,
 		&i.UpdatedTimestamp,
 	)
@@ -86,22 +90,26 @@ func (q *Queries) SavePreparedness(ctx context.Context, arg SavePreparednessPara
 }
 
 const saveSleep = `-- name: SaveSleep :exec
-INSERT INTO sleep (date, rating, total_duration, number_sleeps) VALUES ($1, $2, $3, $4) ON CONFLICT (date) DO UPDATE SET total_duration = EXCLUDED.total_duration, rating = EXCLUDED.rating, number_sleeps = EXCLUDED.number_sleeps
+INSERT INTO sleep (date, rating, total_sleep, deep_sleep, light_sleep, rem_sleep) VALUES ($1, $2, $3, $4, $5, $6) ON CONFLICT (date) DO UPDATE SET total_sleep = EXCLUDED.total_sleep, rating = EXCLUDED.rating, light_sleep = EXCLUDED.light_sleep, deep_sleep = EXCLUDED.deep_sleep, rem_sleep = EXCLUDED.rem_sleep
 `
 
 type SaveSleepParams struct {
-	Date          time.Time
-	Rating        int32
-	TotalDuration int32
-	NumberSleeps  int32
+	Date       time.Time
+	Rating     int32
+	TotalSleep int32
+	DeepSleep  int32
+	LightSleep int32
+	RemSleep   int32
 }
 
 func (q *Queries) SaveSleep(ctx context.Context, arg SaveSleepParams) error {
 	_, err := q.db.Exec(ctx, saveSleep,
 		arg.Date,
 		arg.Rating,
-		arg.TotalDuration,
-		arg.NumberSleeps,
+		arg.TotalSleep,
+		arg.DeepSleep,
+		arg.LightSleep,
+		arg.RemSleep,
 	)
 	return err
 }

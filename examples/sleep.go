@@ -31,10 +31,12 @@ func main() {
 		randomHours := rng.Int()
 
 		sleepParams := austinapi_db.SaveSleepParams{
-			Date:          time.Now().Add(time.Hour * time.Duration(randomHours)),
-			Rating:        rng.Int31(),
-			TotalDuration: rng.Int31(),
-			NumberSleeps:  rng.Int31(),
+			Date:       time.Now().Add(time.Hour * time.Duration(randomHours)),
+			Rating:     rng.Int31(),
+			TotalSleep: rng.Int31(),
+			LightSleep: rng.Int31(),
+			DeepSleep:  rng.Int31(),
+			RemSleep:   rng.Int31(),
 		}
 
 		err = apiDb.SaveSleep(ctx, sleepParams)

@@ -30,8 +30,10 @@ type Sleep struct {
 	ID               int32
 	Date             time.Time
 	Rating           int32
-	TotalDuration    int32
-	NumberSleeps     int32
+	TotalSleep       int32
+	DeepSleep        int32
+	LightSleep       int32
+	RemSleep         int32
 	CreatedTimestamp time.Time
 	UpdatedTimestamp time.Time
 }

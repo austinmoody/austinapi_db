@@ -3,8 +3,10 @@ create table sleep
     id SERIAL PRIMARY KEY,
     date DATE NOT NULL,
     rating INTEGER NOT NULL,
-    total_duration INTEGER NOT NULL,
-    number_sleeps INTEGER NOT NULL,
+    total_sleep INTEGER NOT NULL,
+    deep_sleep INTEGER NOT NULL,
+    light_sleep INTEGER NOT NULL,
+    rem_sleep INTEGER NOT NULL,
     created_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     updated_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
 );

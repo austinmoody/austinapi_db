@@ -2,7 +2,7 @@ create table sleep
 (
     id SERIAL PRIMARY KEY,
     date DATE NOT NULL,
-    rating INTEGER NOT NULL,
+    rating BIGINT NOT NULL,
     total_sleep INTEGER NOT NULL,
     deep_sleep INTEGER NOT NULL,
     light_sleep INTEGER NOT NULL,

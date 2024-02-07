@@ -29,7 +29,7 @@ type Preparedness struct {
 type Sleep struct {
 	ID               int32
 	Date             time.Time
-	Rating           int
+	Rating           int64
 	TotalSleep       int
 	DeepSleep        int
 	LightSleep       int

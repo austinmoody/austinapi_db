@@ -95,7 +95,7 @@ INSERT INTO sleep (date, rating, total_sleep, deep_sleep, light_sleep, rem_sleep
 
 type SaveSleepParams struct {
 	Date       time.Time
-	Rating     int
+	Rating     int64
 	TotalSleep int
 	DeepSleep  int
 	LightSleep int

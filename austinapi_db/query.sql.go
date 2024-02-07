@@ -60,9 +60,9 @@ INSERT INTO heartrate (date, low, high, average) VALUES ($1, $2, $3, $4) ON CONF
 
 type SaveHeartRateParams struct {
 	Date    time.Time
-	Low     int32
-	High    int32
-	Average int32
+	Low     int
+	High    int
+	Average int
 }
 
 func (q *Queries) SaveHeartRate(ctx context.Context, arg SaveHeartRateParams) error {
@@ -81,7 +81,7 @@ INSERT INTO preparedness (date, rating) VALUES ($1, $2) ON CONFLICT (date) DO UP
 
 type SavePreparednessParams struct {
 	Date   time.Time
-	Rating int32
+	Rating int
 }
 
 func (q *Queries) SavePreparedness(ctx context.Context, arg SavePreparednessParams) error {
@@ -95,11 +95,11 @@ INSERT INTO sleep (date, rating, total_sleep, deep_sleep, light_sleep, rem_sleep
 
 type SaveSleepParams struct {
 	Date       time.Time
-	Rating     int32
-	TotalSleep int32
-	DeepSleep  int32
-	LightSleep int32
-	RemSleep   int32
+	Rating     int
+	TotalSleep int
+	DeepSleep  int
+	LightSleep int
+	RemSleep   int
 }
 
 func (q *Queries) SaveSleep(ctx context.Context, arg SaveSleepParams) error {
@@ -134,7 +134,7 @@ INSERT INTO stress (date, high_stress_duration) VALUES ($1, $2) ON CONFLICT (dat
 
 type SaveStressParams struct {
 	Date               time.Time
-	HighStressDuration int32
+	HighStressDuration int
 }
 
 func (q *Queries) SaveStress(ctx context.Context, arg SaveStressParams) error {

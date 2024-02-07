@@ -14,3 +14,5 @@ sql:
             go_type: "time.Time"
           - db_type: "pg_catalog.timestamp"
             go_type: "time.Time"
+          - db_type: "pg_catalog.int4"
+            go_type: "int"

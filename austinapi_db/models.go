@@ -11,9 +11,9 @@ import (
 type Heartrate struct {
 	ID               int32
 	Date             time.Time
-	High             int32
-	Low              int32
-	Average          int32
+	High             int
+	Low              int
+	Average          int
 	CreatedTimestamp time.Time
 	UpdatedTimestamp time.Time
 }
@@ -21,7 +21,7 @@ type Heartrate struct {
 type Preparedness struct {
 	ID               int32
 	Date             time.Time
-	Rating           int32
+	Rating           int
 	CreatedTimestamp time.Time
 	UpdatedTimestamp time.Time
 }
@@ -29,11 +29,11 @@ type Preparedness struct {
 type Sleep struct {
 	ID               int32
 	Date             time.Time
-	Rating           int32
-	TotalSleep       int32
-	DeepSleep        int32
-	LightSleep       int32
-	RemSleep         int32
+	Rating           int
+	TotalSleep       int
+	DeepSleep        int
+	LightSleep       int
+	RemSleep         int
 	CreatedTimestamp time.Time
 	UpdatedTimestamp time.Time
 }
@@ -49,7 +49,7 @@ type Spo2 struct {
 type Stress struct {
 	ID                 int32
 	Date               time.Time
-	HighStressDuration int32
+	HighStressDuration int
 	CreatedTimestamp   time.Time
 	UpdatedTimestamp   time.Time
 }

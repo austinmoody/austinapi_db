@@ -1,9 +1,10 @@
 CREATE TABLE stress (
-      id SERIAL PRIMARY KEY,
-      date DATE NOT NULL,
-      high_stress_duration INTEGER NOT NULL, -- milliseconds
-      created_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
-      updated_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
+    id uuid DEFAULT gen_random_uuid(),
+    date DATE NOT NULL,
+    high_stress_duration INTEGER NOT NULL, -- milliseconds
+    created_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    PRIMARY KEY (id)
 );
 
 CREATE INDEX idx_stress_date ON stress(date);

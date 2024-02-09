@@ -1,11 +1,12 @@
 CREATE TABLE heartrate (
-    id SERIAL PRIMARY KEY,
+    id uuid DEFAULT gen_random_uuid(),
     date DATE NOT NULL,
     high INTEGER NOT NULL,
     low INTEGER NOT NULL,
     average INTEGER NOT NULL,
     created_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    updated_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
+    updated_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    PRIMARY KEY (id)
 );
 
 CREATE INDEX idx_heartrate_date ON heartrate(date);

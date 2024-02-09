@@ -1,9 +1,10 @@
 CREATE TABLE spo2 (
-    id SERIAL PRIMARY KEY,
+    id uuid DEFAULT gen_random_uuid(),
     date DATE NOT NULL,
     average_spo2 DOUBLE PRECISION NOT NULL,
     created_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    updated_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
+    updated_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    PRIMARY KEY (id)
 );
 
 CREATE INDEX idx_spo2_date ON spo2(date);

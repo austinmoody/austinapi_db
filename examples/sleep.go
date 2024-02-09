@@ -27,16 +27,16 @@ func main() {
 	// Loop 5 times, randomly generate data
 	source := rand.NewSource(time.Now().UnixNano())
 	rng := rand.New(source)
-	for i := 0; i < 5; i++ {
-		randomHours := rng.Int()
+	for i := 0; i < 50; i++ {
+		randomHours := rng.Intn(8674) + 1
 
 		sleepParams := austinapi_db.SaveSleepParams{
-			Date:       time.Now().Add(time.Hour * time.Duration(randomHours)),
-			Rating:     rng.Int31(),
-			TotalSleep: rng.Int31(),
-			LightSleep: rng.Int31(),
-			DeepSleep:  rng.Int31(),
-			RemSleep:   rng.Int31(),
+			Date:       time.Now().Add(time.Hour * (-1 * time.Duration(randomHours))),
+			Rating:     rng.Int63n(100) - 1,
+			TotalSleep: rng.Intn(50000) - 100,
+			LightSleep: rng.Intn(50000) - 200,
+			DeepSleep:  rng.Intn(50000) - 300,
+			RemSleep:   rng.Intn(50000) - 400,
 		}
 
 		err = apiDb.SaveSleep(ctx, sleepParams)

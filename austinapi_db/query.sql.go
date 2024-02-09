@@ -8,6 +8,8 @@ package austinapi_db
 import (
 	"context"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 const getSleep = `-- name: GetSleep :one
@@ -16,7 +18,7 @@ SELECT id, date, rating, total_sleep, deep_sleep, light_sleep, rem_sleep, create
 `
 
 // TODO - Rethink naming here.  Add indicates we'd be potentially adding to what is there? maybe thereis some way w/ insert to add?  So if we insert a duration we'd add to what is there and increment
-func (q *Queries) GetSleep(ctx context.Context, id int32) (Sleep, error) {
+func (q *Queries) GetSleep(ctx context.Context, id uuid.UUID) (Sleep, error) {
 	row := q.db.QueryRow(ctx, getSleep, id)
 	var i Sleep
 	err := row.Scan(
@@ -52,6 +54,74 @@ func (q *Queries) GetSleepByDate(ctx context.Context, date time.Time) (Sleep, er
 		&i.UpdatedTimestamp,
 	)
 	return i, err
+}
+
+const listSleep = `-- name: ListSleep :many
+SELECT id, date, rating, total_sleep, deep_sleep, light_sleep, rem_sleep, created_timestamp, updated_timestamp FROM sleep ORDER BY date DESC LIMIT 10
+`
+
+func (q *Queries) ListSleep(ctx context.Context) ([]Sleep, error) {
+	rows, err := q.db.Query(ctx, listSleep)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Sleep
+	for rows.Next() {
+		var i Sleep
+		if err := rows.Scan(
+			&i.ID,
+			&i.Date,
+			&i.Rating,
+			&i.TotalSleep,
+			&i.DeepSleep,
+			&i.LightSleep,
+			&i.RemSleep,
+			&i.CreatedTimestamp,
+			&i.UpdatedTimestamp,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listSleepNextByDate = `-- name: ListSleepNextByDate :many
+SELECT id, date, rating, total_sleep, deep_sleep, light_sleep, rem_sleep, created_timestamp, updated_timestamp FROM sleep WHERE date < $1 ORDER BY date DESC LIMIT 10
+`
+
+func (q *Queries) ListSleepNextByDate(ctx context.Context, date time.Time) ([]Sleep, error) {
+	rows, err := q.db.Query(ctx, listSleepNextByDate, date)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Sleep
+	for rows.Next() {
+		var i Sleep
+		if err := rows.Scan(
+			&i.ID,
+			&i.Date,
+			&i.Rating,
+			&i.TotalSleep,
+			&i.DeepSleep,
+			&i.LightSleep,
+			&i.RemSleep,
+			&i.CreatedTimestamp,
+			&i.UpdatedTimestamp,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const saveHeartRate = `-- name: SaveHeartRate :exec

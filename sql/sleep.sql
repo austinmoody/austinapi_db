@@ -1,6 +1,6 @@
 create table sleep
 (
-    id SERIAL PRIMARY KEY,
+    id uuid DEFAULT gen_random_uuid(),
     date DATE NOT NULL,
     rating BIGINT NOT NULL,
     total_sleep INTEGER NOT NULL,
@@ -8,7 +8,8 @@ create table sleep
     light_sleep INTEGER NOT NULL,
     rem_sleep INTEGER NOT NULL,
     created_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    updated_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
+    updated_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    PRIMARY KEY (id)
 );
 
 CREATE INDEX idx_sleep_date ON sleep(date);

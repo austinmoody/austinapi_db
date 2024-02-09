@@ -8,6 +8,12 @@ SELECT * FROM sleep WHERE id = $1;
 -- name: GetSleepByDate :one
 SELECT * FROM sleep WHERE date = $1;
 
+-- name: ListSleep :many
+SELECT * FROM sleep ORDER BY date DESC LIMIT 10;
+
+-- name: ListSleepNextByDate :many
+SELECT * FROM sleep WHERE date < $1 ORDER BY date DESC LIMIT 10;
+
 -- name: SavePreparedness :exec
 INSERT INTO preparedness (date, rating) VALUES ($1, $2) ON CONFLICT (date) DO UPDATE SET rating = EXCLUDED.rating;
 

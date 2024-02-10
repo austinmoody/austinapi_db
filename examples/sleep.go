@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/austinmoody/austinapi_db/austinapi_db"
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/joho/godotenv"
 	"log"
@@ -13,6 +14,28 @@ import (
 )
 
 func main() {
+	connStr := GetDatabaseConnectionString()
+	ctx := context.Background()
+
+	conn, err := pgx.Connect(ctx, connStr)
+	if err != nil {
+		log.Fatalf("DB Connection error: %v", err)
+	}
+	defer conn.Close(ctx)
+
+	apiDb := austinapi_db.New(conn)
+
+	myUuid := uuid.New()
+	mySleep, err := apiDb.GetSleep(ctx, myUuid)
+	if err != nil {
+		log.Fatalf("Error Getting Sleep By Date: %v", err)
+	}
+
+	log.Println(mySleep)
+
+}
+
+func oldmain() {
 	connStr := GetDatabaseConnectionString()
 	ctx := context.Background()
 
@@ -49,7 +72,7 @@ func main() {
 			log.Fatalf("Error Getting Sleep By Date: %v", err)
 		}
 
-		log.Printf("\nSleep Rating: %v\n", mySleep.Rating)
+		log.Printf("\nSleep: %v\n", mySleep)
 
 	}
 

@@ -9,6 +9,7 @@ sql:
         out: "austinapi_db"
         sql_package: "pgx/v5"
         emit_pointers_for_null_types: true
+        emit_empty_slices: true
         overrides:
           - db_type: "date"
             go_type: "time.Time"

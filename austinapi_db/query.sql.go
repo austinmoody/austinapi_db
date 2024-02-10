@@ -12,48 +12,72 @@ import (
 	"github.com/google/uuid"
 )
 
-const getSleep = `-- name: GetSleep :one
-
+const getSleep = `-- name: GetSleep :many
 SELECT id, date, rating, total_sleep, deep_sleep, light_sleep, rem_sleep, created_timestamp, updated_timestamp FROM sleep WHERE id = $1
 `
 
-// TODO - Rethink naming here.  Add indicates we'd be potentially adding to what is there? maybe thereis some way w/ insert to add?  So if we insert a duration we'd add to what is there and increment
-func (q *Queries) GetSleep(ctx context.Context, id uuid.UUID) (Sleep, error) {
-	row := q.db.QueryRow(ctx, getSleep, id)
-	var i Sleep
-	err := row.Scan(
-		&i.ID,
-		&i.Date,
-		&i.Rating,
-		&i.TotalSleep,
-		&i.DeepSleep,
-		&i.LightSleep,
-		&i.RemSleep,
-		&i.CreatedTimestamp,
-		&i.UpdatedTimestamp,
-	)
-	return i, err
+func (q *Queries) GetSleep(ctx context.Context, id uuid.UUID) ([]Sleep, error) {
+	rows, err := q.db.Query(ctx, getSleep, id)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []Sleep{}
+	for rows.Next() {
+		var i Sleep
+		if err := rows.Scan(
+			&i.ID,
+			&i.Date,
+			&i.Rating,
+			&i.TotalSleep,
+			&i.DeepSleep,
+			&i.LightSleep,
+			&i.RemSleep,
+			&i.CreatedTimestamp,
+			&i.UpdatedTimestamp,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
-const getSleepByDate = `-- name: GetSleepByDate :one
+const getSleepByDate = `-- name: GetSleepByDate :many
 SELECT id, date, rating, total_sleep, deep_sleep, light_sleep, rem_sleep, created_timestamp, updated_timestamp FROM sleep WHERE date = $1
 `
 
-func (q *Queries) GetSleepByDate(ctx context.Context, date time.Time) (Sleep, error) {
-	row := q.db.QueryRow(ctx, getSleepByDate, date)
-	var i Sleep
-	err := row.Scan(
-		&i.ID,
-		&i.Date,
-		&i.Rating,
-		&i.TotalSleep,
-		&i.DeepSleep,
-		&i.LightSleep,
-		&i.RemSleep,
-		&i.CreatedTimestamp,
-		&i.UpdatedTimestamp,
-	)
-	return i, err
+func (q *Queries) GetSleepByDate(ctx context.Context, date time.Time) ([]Sleep, error) {
+	rows, err := q.db.Query(ctx, getSleepByDate, date)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []Sleep{}
+	for rows.Next() {
+		var i Sleep
+		if err := rows.Scan(
+			&i.ID,
+			&i.Date,
+			&i.Rating,
+			&i.TotalSleep,
+			&i.DeepSleep,
+			&i.LightSleep,
+			&i.RemSleep,
+			&i.CreatedTimestamp,
+			&i.UpdatedTimestamp,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const listSleep = `-- name: ListSleep :many
@@ -66,7 +90,7 @@ func (q *Queries) ListSleep(ctx context.Context) ([]Sleep, error) {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []Sleep
+	items := []Sleep{}
 	for rows.Next() {
 		var i Sleep
 		if err := rows.Scan(
@@ -100,7 +124,7 @@ func (q *Queries) ListSleepNextByDate(ctx context.Context, date time.Time) ([]Sl
 		return nil, err
 	}
 	defer rows.Close()
-	var items []Sleep
+	items := []Sleep{}
 	for rows.Next() {
 		var i Sleep
 		if err := rows.Scan(

@@ -80,6 +80,30 @@ func (q *Queries) GetSleepByDate(ctx context.Context, date time.Time) ([]Sleep, 
 	return items, nil
 }
 
+const getSleepDateById = `-- name: GetSleepDateById :many
+SELECT date FROM sleep WHERE id = $1
+`
+
+func (q *Queries) GetSleepDateById(ctx context.Context, id uuid.UUID) ([]time.Time, error) {
+	rows, err := q.db.Query(ctx, getSleepDateById, id)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []time.Time{}
+	for rows.Next() {
+		var date time.Time
+		if err := rows.Scan(&date); err != nil {
+			return nil, err
+		}
+		items = append(items, date)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listSleep = `-- name: ListSleep :many
 SELECT id, date, rating, total_sleep, deep_sleep, light_sleep, rem_sleep, created_timestamp, updated_timestamp FROM sleep ORDER BY date DESC LIMIT 10
 `

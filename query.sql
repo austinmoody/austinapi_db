@@ -7,6 +7,9 @@ SELECT * FROM sleep WHERE id = $1;
 -- name: GetSleepByDate :many
 SELECT * FROM sleep WHERE date = $1;
 
+-- name: GetSleepDateById :many
+SELECT date FROM sleep WHERE id = $1;
+
 -- name: ListSleep :many
 SELECT * FROM sleep ORDER BY date DESC LIMIT 10;
 

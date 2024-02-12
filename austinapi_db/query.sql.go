@@ -105,18 +105,39 @@ func (q *Queries) GetSleepDateById(ctx context.Context, id uuid.UUID) ([]time.Ti
 }
 
 const listSleep = `-- name: ListSleep :many
-SELECT id, date, rating, total_sleep, deep_sleep, light_sleep, rem_sleep, created_timestamp, updated_timestamp FROM sleep ORDER BY date DESC LIMIT 10
+SELECT id, date, rating, total_sleep, deep_sleep, light_sleep, rem_sleep, created_timestamp, updated_timestamp, previous_id, next_id FROM (
+    SELECT id, date, rating, total_sleep, deep_sleep, light_sleep, rem_sleep, created_timestamp, updated_timestamp,
+           CAST(LAG(id) OVER (ORDER BY date DESC) AS UUID)  AS previous_id,
+           CAST(LEAD(id) OVER (ORDER BY date DESC) AS UUID) AS next_id
+    FROM sleep
+) sleeps
+ORDER BY date DESC
+LIMIT $1
 `
 
-func (q *Queries) ListSleep(ctx context.Context) ([]Sleep, error) {
-	rows, err := q.db.Query(ctx, listSleep)
+type ListSleepRow struct {
+	ID               uuid.UUID
+	Date             time.Time
+	Rating           int64
+	TotalSleep       int
+	DeepSleep        int
+	LightSleep       int
+	RemSleep         int
+	CreatedTimestamp time.Time
+	UpdatedTimestamp time.Time
+	PreviousID       uuid.UUID
+	NextID           uuid.UUID
+}
+
+func (q *Queries) ListSleep(ctx context.Context, limit int32) ([]ListSleepRow, error) {
+	rows, err := q.db.Query(ctx, listSleep, limit)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	items := []Sleep{}
+	items := []ListSleepRow{}
 	for rows.Next() {
-		var i Sleep
+		var i ListSleepRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.Date,
@@ -127,6 +148,8 @@ func (q *Queries) ListSleep(ctx context.Context) ([]Sleep, error) {
 			&i.RemSleep,
 			&i.CreatedTimestamp,
 			&i.UpdatedTimestamp,
+			&i.PreviousID,
+			&i.NextID,
 		); err != nil {
 			return nil, err
 		}
@@ -138,19 +161,48 @@ func (q *Queries) ListSleep(ctx context.Context) ([]Sleep, error) {
 	return items, nil
 }
 
-const listSleepNextByDate = `-- name: ListSleepNextByDate :many
-SELECT id, date, rating, total_sleep, deep_sleep, light_sleep, rem_sleep, created_timestamp, updated_timestamp FROM sleep WHERE date < $1 ORDER BY date DESC LIMIT 10
+const listSleepNext = `-- name: ListSleepNext :many
+SELECT id, date, rating, total_sleep, deep_sleep, light_sleep, rem_sleep, created_timestamp, updated_timestamp, previous_id, next_id FROM (
+      SELECT id, date, rating, total_sleep, deep_sleep, light_sleep, rem_sleep, created_timestamp, updated_timestamp,
+             CAST(LAG(id) OVER (ORDER BY date DESC) AS UUID)  AS previous_id,
+             CAST(LEAD(id) OVER (ORDER BY date DESC) AS UUID) AS next_id
+      FROM sleep
+              ) sleeps
+WHERE date <= (
+    SELECT date FROM sleep AS SLP WHERE SLP.id = $1
+)
+ORDER BY date DESC
+LIMIT $2
 `
 
-func (q *Queries) ListSleepNextByDate(ctx context.Context, date time.Time) ([]Sleep, error) {
-	rows, err := q.db.Query(ctx, listSleepNextByDate, date)
+type ListSleepNextParams struct {
+	ID    uuid.UUID
+	Limit int32
+}
+
+type ListSleepNextRow struct {
+	ID               uuid.UUID
+	Date             time.Time
+	Rating           int64
+	TotalSleep       int
+	DeepSleep        int
+	LightSleep       int
+	RemSleep         int
+	CreatedTimestamp time.Time
+	UpdatedTimestamp time.Time
+	PreviousID       uuid.UUID
+	NextID           uuid.UUID
+}
+
+func (q *Queries) ListSleepNext(ctx context.Context, arg ListSleepNextParams) ([]ListSleepNextRow, error) {
+	rows, err := q.db.Query(ctx, listSleepNext, arg.ID, arg.Limit)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	items := []Sleep{}
+	items := []ListSleepNextRow{}
 	for rows.Next() {
-		var i Sleep
+		var i ListSleepNextRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.Date,
@@ -161,6 +213,73 @@ func (q *Queries) ListSleepNextByDate(ctx context.Context, date time.Time) ([]Sl
 			&i.RemSleep,
 			&i.CreatedTimestamp,
 			&i.UpdatedTimestamp,
+			&i.PreviousID,
+			&i.NextID,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listSleepPrevious = `-- name: ListSleepPrevious :many
+SELECT id, date, rating, total_sleep, deep_sleep, light_sleep, rem_sleep, created_timestamp, updated_timestamp, previous_id, next_id FROM (
+      SELECT id, date, rating, total_sleep, deep_sleep, light_sleep, rem_sleep, created_timestamp, updated_timestamp,
+             CAST(LAG(id) OVER (ORDER BY date DESC) AS UUID)  AS previous_id,
+             CAST(LEAD(id) OVER (ORDER BY date DESC) AS UUID) AS next_id
+      FROM sleep
+              ) sleeps
+WHERE date >= (
+    SELECT date FROM sleep AS SLP WHERE SLP.id = $1
+)
+ORDER BY date DESC
+LIMIT $2
+`
+
+type ListSleepPreviousParams struct {
+	ID    uuid.UUID
+	Limit int32
+}
+
+type ListSleepPreviousRow struct {
+	ID               uuid.UUID
+	Date             time.Time
+	Rating           int64
+	TotalSleep       int
+	DeepSleep        int
+	LightSleep       int
+	RemSleep         int
+	CreatedTimestamp time.Time
+	UpdatedTimestamp time.Time
+	PreviousID       uuid.UUID
+	NextID           uuid.UUID
+}
+
+func (q *Queries) ListSleepPrevious(ctx context.Context, arg ListSleepPreviousParams) ([]ListSleepPreviousRow, error) {
+	rows, err := q.db.Query(ctx, listSleepPrevious, arg.ID, arg.Limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListSleepPreviousRow{}
+	for rows.Next() {
+		var i ListSleepPreviousRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Date,
+			&i.Rating,
+			&i.TotalSleep,
+			&i.DeepSleep,
+			&i.LightSleep,
+			&i.RemSleep,
+			&i.CreatedTimestamp,
+			&i.UpdatedTimestamp,
+			&i.PreviousID,
+			&i.NextID,
 		); err != nil {
 			return nil, err
 		}

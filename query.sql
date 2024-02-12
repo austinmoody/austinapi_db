@@ -11,11 +11,43 @@ SELECT * FROM sleep WHERE date = $1;
 SELECT date FROM sleep WHERE id = $1;
 
 -- name: ListSleep :many
-SELECT * FROM sleep ORDER BY date DESC LIMIT 10;
+SELECT * FROM (
+    SELECT *,
+           CAST(LAG(id) OVER (ORDER BY date DESC) AS UUID)  AS previous_id,
+           CAST(LEAD(id) OVER (ORDER BY date DESC) AS UUID) AS next_id
+    FROM sleep
+) sleeps
+ORDER BY date DESC
+LIMIT $1
+;
 
--- name: ListSleepNextByDate :many
-SELECT * FROM sleep WHERE date < $1 ORDER BY date DESC LIMIT 10;
+-- name: ListSleepNext :many
+SELECT * FROM (
+      SELECT *,
+             CAST(LAG(id) OVER (ORDER BY date DESC) AS UUID)  AS previous_id,
+             CAST(LEAD(id) OVER (ORDER BY date DESC) AS UUID) AS next_id
+      FROM sleep
+              ) sleeps
+WHERE date <= (
+    SELECT date FROM sleep AS SLP WHERE SLP.id = $1
+)
+ORDER BY date DESC
+LIMIT $2
+;
 
+-- name: ListSleepPrevious :many
+SELECT * FROM (
+      SELECT *,
+             CAST(LAG(id) OVER (ORDER BY date DESC) AS UUID)  AS previous_id,
+             CAST(LEAD(id) OVER (ORDER BY date DESC) AS UUID) AS next_id
+      FROM sleep
+              ) sleeps
+WHERE date >= (
+    SELECT date FROM sleep AS SLP WHERE SLP.id = $1
+)
+ORDER BY date DESC
+LIMIT $2
+;
 -- name: SavePreparedness :exec
 INSERT INTO preparedness (date, rating) VALUES ($1, $2) ON CONFLICT (date) DO UPDATE SET rating = EXCLUDED.rating;
 

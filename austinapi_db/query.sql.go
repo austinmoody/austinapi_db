@@ -8,8 +8,6 @@ package austinapi_db
 import (
 	"context"
 	"time"
-
-	"github.com/google/uuid"
 )
 
 const getSleep = `-- name: GetSleep :many
@@ -108,9 +106,7 @@ const listSleep = `-- name: ListSleep :many
 SELECT id, date, rating, total_sleep, deep_sleep, light_sleep, rem_sleep, created_timestamp, updated_timestamp, previous_id, next_id FROM (
     SELECT id, date, rating, total_sleep, deep_sleep, light_sleep, rem_sleep, created_timestamp, updated_timestamp,
            CAST(COALESCE(LAG(id) OVER (ORDER BY date DESC), -1) AS BIGINT) AS previous_id,
-           --CAST(LAG(id) OVER (ORDER BY date DESC) AS TEXT) AS previous_id,
            CAST(COALESCE(LEAD(id) OVER (ORDER BY date DESC), -1) AS BIGINT) AS next_id
-           --CAST(LEAD(id) OVER (ORDER BY date DESC) AS TEXT) AS next_id
     FROM sleep
 ) sleeps
 ORDER BY date DESC
@@ -166,8 +162,8 @@ func (q *Queries) ListSleep(ctx context.Context, limit int32) ([]ListSleepRow, e
 const listSleepNext = `-- name: ListSleepNext :many
 SELECT id, date, rating, total_sleep, deep_sleep, light_sleep, rem_sleep, created_timestamp, updated_timestamp, previous_id, next_id FROM (
       SELECT id, date, rating, total_sleep, deep_sleep, light_sleep, rem_sleep, created_timestamp, updated_timestamp,
-             CAST(LAG(id) OVER (ORDER BY date DESC) AS UUID)  AS previous_id,
-             CAST(LEAD(id) OVER (ORDER BY date DESC) AS UUID) AS next_id
+             CAST(COALESCE(LAG(id) OVER (ORDER BY date DESC), -1) AS BIGINT) AS previous_id,
+             CAST(COALESCE(LEAD(id) OVER (ORDER BY date DESC), -1) AS BIGINT) AS next_id
       FROM sleep
               ) sleeps
 WHERE date <= (
@@ -192,8 +188,8 @@ type ListSleepNextRow struct {
 	RemSleep         int
 	CreatedTimestamp time.Time
 	UpdatedTimestamp time.Time
-	PreviousID       uuid.UUID
-	NextID           uuid.UUID
+	PreviousID       int64
+	NextID           int64
 }
 
 func (q *Queries) ListSleepNext(ctx context.Context, arg ListSleepNextParams) ([]ListSleepNextRow, error) {
@@ -231,8 +227,8 @@ func (q *Queries) ListSleepNext(ctx context.Context, arg ListSleepNextParams) ([
 const listSleepPrevious = `-- name: ListSleepPrevious :many
 SELECT id, date, rating, total_sleep, deep_sleep, light_sleep, rem_sleep, created_timestamp, updated_timestamp, previous_id, next_id FROM (
       SELECT id, date, rating, total_sleep, deep_sleep, light_sleep, rem_sleep, created_timestamp, updated_timestamp,
-             CAST(LAG(id) OVER (ORDER BY date DESC) AS UUID)  AS previous_id,
-             CAST(LEAD(id) OVER (ORDER BY date DESC) AS UUID) AS next_id
+             CAST(COALESCE(LAG(id) OVER (ORDER BY date DESC), -1) AS BIGINT) AS previous_id,
+             CAST(COALESCE(LEAD(id) OVER (ORDER BY date DESC), -1) AS BIGINT) AS next_id
       FROM sleep
               ) sleeps
 WHERE date >= (
@@ -257,8 +253,8 @@ type ListSleepPreviousRow struct {
 	RemSleep         int
 	CreatedTimestamp time.Time
 	UpdatedTimestamp time.Time
-	PreviousID       uuid.UUID
-	NextID           uuid.UUID
+	PreviousID       int64
+	NextID           int64
 }
 
 func (q *Queries) ListSleepPrevious(ctx context.Context, arg ListSleepPreviousParams) ([]ListSleepPreviousRow, error) {

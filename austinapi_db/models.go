@@ -29,7 +29,7 @@ type Preparedness struct {
 }
 
 type Sleep struct {
-	ID               uuid.UUID
+	ID               int64
 	Date             time.Time
 	Rating           int64
 	TotalSleep       int

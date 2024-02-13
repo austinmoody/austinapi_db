@@ -13,8 +13,10 @@ SELECT date FROM sleep WHERE id = $1;
 -- name: ListSleep :many
 SELECT * FROM (
     SELECT *,
-           CAST(LAG(id) OVER (ORDER BY date DESC) AS UUID)  AS previous_id,
-           CAST(LEAD(id) OVER (ORDER BY date DESC) AS UUID) AS next_id
+           CAST(COALESCE(LAG(id) OVER (ORDER BY date DESC), -1) AS BIGINT) AS previous_id,
+           --CAST(LAG(id) OVER (ORDER BY date DESC) AS TEXT) AS previous_id,
+           CAST(COALESCE(LEAD(id) OVER (ORDER BY date DESC), -1) AS BIGINT) AS next_id
+           --CAST(LEAD(id) OVER (ORDER BY date DESC) AS TEXT) AS next_id
     FROM sleep
 ) sleeps
 ORDER BY date DESC

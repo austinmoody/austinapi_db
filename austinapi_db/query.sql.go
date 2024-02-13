@@ -16,7 +16,7 @@ const getSleep = `-- name: GetSleep :many
 SELECT id, date, rating, total_sleep, deep_sleep, light_sleep, rem_sleep, created_timestamp, updated_timestamp FROM sleep WHERE id = $1
 `
 
-func (q *Queries) GetSleep(ctx context.Context, id uuid.UUID) ([]Sleep, error) {
+func (q *Queries) GetSleep(ctx context.Context, id int64) ([]Sleep, error) {
 	rows, err := q.db.Query(ctx, getSleep, id)
 	if err != nil {
 		return nil, err
@@ -84,7 +84,7 @@ const getSleepDateById = `-- name: GetSleepDateById :many
 SELECT date FROM sleep WHERE id = $1
 `
 
-func (q *Queries) GetSleepDateById(ctx context.Context, id uuid.UUID) ([]time.Time, error) {
+func (q *Queries) GetSleepDateById(ctx context.Context, id int64) ([]time.Time, error) {
 	rows, err := q.db.Query(ctx, getSleepDateById, id)
 	if err != nil {
 		return nil, err
@@ -107,8 +107,10 @@ func (q *Queries) GetSleepDateById(ctx context.Context, id uuid.UUID) ([]time.Ti
 const listSleep = `-- name: ListSleep :many
 SELECT id, date, rating, total_sleep, deep_sleep, light_sleep, rem_sleep, created_timestamp, updated_timestamp, previous_id, next_id FROM (
     SELECT id, date, rating, total_sleep, deep_sleep, light_sleep, rem_sleep, created_timestamp, updated_timestamp,
-           CAST(LAG(id) OVER (ORDER BY date DESC) AS UUID)  AS previous_id,
-           CAST(LEAD(id) OVER (ORDER BY date DESC) AS UUID) AS next_id
+           CAST(COALESCE(LAG(id) OVER (ORDER BY date DESC), -1) AS BIGINT) AS previous_id,
+           --CAST(LAG(id) OVER (ORDER BY date DESC) AS TEXT) AS previous_id,
+           CAST(COALESCE(LEAD(id) OVER (ORDER BY date DESC), -1) AS BIGINT) AS next_id
+           --CAST(LEAD(id) OVER (ORDER BY date DESC) AS TEXT) AS next_id
     FROM sleep
 ) sleeps
 ORDER BY date DESC
@@ -116,7 +118,7 @@ LIMIT $1
 `
 
 type ListSleepRow struct {
-	ID               uuid.UUID
+	ID               int64
 	Date             time.Time
 	Rating           int64
 	TotalSleep       int
@@ -125,8 +127,8 @@ type ListSleepRow struct {
 	RemSleep         int
 	CreatedTimestamp time.Time
 	UpdatedTimestamp time.Time
-	PreviousID       uuid.UUID
-	NextID           uuid.UUID
+	PreviousID       int64
+	NextID           int64
 }
 
 func (q *Queries) ListSleep(ctx context.Context, limit int32) ([]ListSleepRow, error) {
@@ -176,12 +178,12 @@ LIMIT $2
 `
 
 type ListSleepNextParams struct {
-	ID    uuid.UUID
+	ID    int64
 	Limit int32
 }
 
 type ListSleepNextRow struct {
-	ID               uuid.UUID
+	ID               int64
 	Date             time.Time
 	Rating           int64
 	TotalSleep       int
@@ -241,12 +243,12 @@ LIMIT $2
 `
 
 type ListSleepPreviousParams struct {
-	ID    uuid.UUID
+	ID    int64
 	Limit int32
 }
 
 type ListSleepPreviousRow struct {
-	ID               uuid.UUID
+	ID               int64
 	Date             time.Time
 	Rating           int64
 	TotalSleep       int

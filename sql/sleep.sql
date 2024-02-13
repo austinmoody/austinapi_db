@@ -1,6 +1,7 @@
 create table sleep
 (
-    id uuid DEFAULT gen_random_uuid(),
+    --id uuid DEFAULT gen_random_uuid(),
+    id BIGINT GENERATED ALWAYS AS IDENTITY,
     date DATE NOT NULL,
     rating BIGINT NOT NULL,
     total_sleep INTEGER NOT NULL,

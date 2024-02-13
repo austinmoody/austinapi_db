@@ -19,3 +19,5 @@ sql:
             go_type: "int"
           - db_type: "uuid"
             go_type: "github.com/google/uuid.UUID"
+          - db_type: "serial"
+            go_type: "uint64"

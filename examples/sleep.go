@@ -2,12 +2,11 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"github.com/austinmoody/austinapi_db/austinapi_db"
-	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/joho/godotenv"
+	"github.com/sqids/sqids-go"
 	"log"
 	"math/rand"
 	"os"
@@ -16,73 +15,77 @@ import (
 
 type SleepList struct {
 	Data          []austinapi_db.Sleep `json:"data"`
-	NextToken     *string              `json:"next_token"`
-	PreviousToken *string              `json:"previous_token"`
+	NextToken     string               `json:"next_token"`
+	PreviousToken string               `json:"previous_token"`
 }
 
 func main() {
-	sleepList := newListSleepExample()
 
-	listSleepNext(*sleepList.NextToken)
+	//populateRandom()
+
+	sleepList := newListSleepExample()
+	log.Println(sleepList.NextToken)
+	//listSleepNext(*sleepList.NextToken)
+
 }
 
 func listSleepNext(nextToken string) {
-	connStr := GetDatabaseConnectionString()
-	ctx := context.Background()
-
-	conn, err := pgx.Connect(ctx, connStr)
-	if err != nil {
-		log.Fatalf("DB Connection error: %v", err)
-	}
-	defer conn.Close(ctx)
-
-	apiDb := austinapi_db.New(conn)
-
-	nextTokenUuid, err := uuid.Parse(nextToken)
-	if err != nil {
-		log.Fatalf("Error parsing next token: %v\n", err)
-	}
-
-	params := austinapi_db.ListSleepNextParams{
-		ID:    nextTokenUuid,
-		Limit: 10,
-	}
-
-	sleeps, err := apiDb.ListSleepNext(ctx, params)
-	if err != nil {
-		log.Fatalf("Error getting list of sleep %v\n", err)
-	}
-
-	var previousId *string
-	if sleeps[0].PreviousID == uuid.Nil {
-		previousId = nil
-	} else {
-		previousIdString := sleeps[0].PreviousID.String()
-		previousId = &previousIdString
-	}
-
-	var nextId *string
-	if sleeps[len(sleeps)-1].NextID == uuid.Nil {
-		nextId = nil
-	} else {
-		nextIdString := sleeps[len(sleeps)-1].NextID.String()
-		nextId = &nextIdString
-	}
-
-	mySleeps := ConvertListSleepNextToSleep(sleeps)
-
-	sleepList := SleepList{
-		Data:          mySleeps,
-		NextToken:     nextId,
-		PreviousToken: previousId,
-	}
-
-	jsonBytes, err := json.Marshal(sleepList)
-	if err != nil {
-		log.Fatalf("error marshaling JSON response: %v", err)
-		return
-	}
-	log.Println(string(jsonBytes))
+	//connStr := GetDatabaseConnectionString()
+	//ctx := context.Background()
+	//
+	//conn, err := pgx.Connect(ctx, connStr)
+	//if err != nil {
+	//	log.Fatalf("DB Connection error: %v", err)
+	//}
+	//defer conn.Close(ctx)
+	//
+	//apiDb := austinapi_db.New(conn)
+	//
+	//nextTokenUuid, err := uuid.Parse(nextToken)
+	//if err != nil {
+	//	log.Fatalf("Error parsing next token: %v\n", err)
+	//}
+	//
+	//params := austinapi_db.ListSleepNextParams{
+	//	ID:    nextTokenUuid,
+	//	Limit: 10,
+	//}
+	//
+	//sleeps, err := apiDb.ListSleepNext(ctx, params)
+	//if err != nil {
+	//	log.Fatalf("Error getting list of sleep %v\n", err)
+	//}
+	//
+	//var previousId *string
+	//if sleeps[0].PreviousID == uuid.Nil {
+	//	previousId = nil
+	//} else {
+	//	previousIdString := sleeps[0].PreviousID.String()
+	//	previousId = &previousIdString
+	//}
+	//
+	//var nextId *string
+	//if sleeps[len(sleeps)-1].NextID == uuid.Nil {
+	//	nextId = nil
+	//} else {
+	//	nextIdString := sleeps[len(sleeps)-1].NextID.String()
+	//	nextId = &nextIdString
+	//}
+	//
+	//mySleeps := ConvertListSleepNextToSleep(sleeps)
+	//
+	//sleepList := SleepList{
+	//	Data:          mySleeps,
+	//	NextToken:     nextId,
+	//	PreviousToken: previousId,
+	//}
+	//
+	//jsonBytes, err := json.Marshal(sleepList)
+	//if err != nil {
+	//	log.Fatalf("error marshaling JSON response: %v", err)
+	//	return
+	//}
+	//log.Println(string(jsonBytes))
 }
 
 func newListSleepExample() SleepList {
@@ -102,23 +105,29 @@ func newListSleepExample() SleepList {
 		log.Fatalf("Error getting list of sleep %v\n", err)
 	}
 
-	var previousId *string
-	if sleeps[0].PreviousID == uuid.Nil {
-		previousId = nil
+	var previousId string
+	if sleeps[0].PreviousID < 1 {
+		previousId = ""
 	} else {
-		previousIdString := sleeps[0].PreviousID.String()
-		previousId = &previousIdString
+		s, _ := sqids.New(sqids.Options{
+			MinLength: 10,
+		})
+		id, _ := s.Encode([]uint64{uint64(sleeps[0].PreviousID)})
+		previousId = id
 	}
 
-	var nextId *string
-	if sleeps[len(sleeps)-1].NextID == uuid.Nil {
-		nextId = nil
+	var nextId string
+	if sleeps[len(sleeps)-1].NextID < 1 {
+		nextId = ""
 	} else {
-		nextIdString := sleeps[len(sleeps)-1].NextID.String()
-		nextId = &nextIdString
+		s, _ := sqids.New(sqids.Options{
+			MinLength: 10,
+		})
+		id, _ := s.Encode([]uint64{uint64(sleeps[len(sleeps)-1].NextID)})
+		nextId = id
 	}
 
-	mySleeps := ConvertToSleep(sleeps)
+	mySleeps := austinapi_db.ConvertToSleep(sleeps)
 
 	sleepList := SleepList{
 		Data:          mySleeps,
@@ -155,49 +164,28 @@ func ConvertListSleepNextToSleep(rows []austinapi_db.ListSleepNextRow) []austina
 	return sleeps
 }
 
-func ConvertToSleep(rows []austinapi_db.ListSleepRow) []austinapi_db.Sleep {
-	var sleeps []austinapi_db.Sleep
-
-	for _, row := range rows {
-		sleep := austinapi_db.Sleep{
-			ID:               row.ID,
-			Date:             row.Date,
-			Rating:           row.Rating,
-			TotalSleep:       row.TotalSleep,
-			DeepSleep:        row.DeepSleep,
-			LightSleep:       row.LightSleep,
-			RemSleep:         row.RemSleep,
-			CreatedTimestamp: row.CreatedTimestamp,
-			UpdatedTimestamp: row.UpdatedTimestamp,
-		}
-		sleeps = append(sleeps, sleep)
-	}
-
-	return sleeps
-}
-
 func getSleepExample() {
-	connStr := GetDatabaseConnectionString()
-	ctx := context.Background()
-
-	conn, err := pgx.Connect(ctx, connStr)
-	if err != nil {
-		log.Fatalf("DB Connection error: %v", err)
-	}
-	defer conn.Close(ctx)
-
-	apiDb := austinapi_db.New(conn)
-
-	myUuid := uuid.New()
-	mySleep, err := apiDb.GetSleep(ctx, myUuid)
-	if err != nil {
-		log.Fatalf("Error Getting Sleep By Date: %v", err)
-	}
-
-	log.Println(mySleep)
+	//connStr := GetDatabaseConnectionString()
+	//ctx := context.Background()
+	//
+	//conn, err := pgx.Connect(ctx, connStr)
+	//if err != nil {
+	//	log.Fatalf("DB Connection error: %v", err)
+	//}
+	//defer conn.Close(ctx)
+	//
+	//apiDb := austinapi_db.New(conn)
+	//
+	//myUuid := uuid.New()
+	//mySleep, err := apiDb.GetSleep(ctx, myUuid)
+	//if err != nil {
+	//	log.Fatalf("Error Getting Sleep By Date: %v", err)
+	//}
+	//
+	//log.Println(mySleep)
 }
 
-func oldmain() {
+func populateRandom() {
 	connStr := GetDatabaseConnectionString()
 	ctx := context.Background()
 

@@ -102,193 +102,6 @@ func (q *Queries) GetSleepDateById(ctx context.Context, id int64) ([]time.Time, 
 	return items, nil
 }
 
-const listSleep = `-- name: ListSleep :many
-SELECT id, date, rating, total_sleep, deep_sleep, light_sleep, rem_sleep, created_timestamp, updated_timestamp, previous_id, next_id FROM (
-    SELECT id, date, rating, total_sleep, deep_sleep, light_sleep, rem_sleep, created_timestamp, updated_timestamp,
-           CAST(COALESCE(LAG(id) OVER (ORDER BY date DESC), -1) AS BIGINT) AS previous_id,
-           CAST(COALESCE(LEAD(id) OVER (ORDER BY date DESC), -1) AS BIGINT) AS next_id
-    FROM sleep
-) sleeps
-ORDER BY date DESC
-LIMIT $1
-`
-
-type ListSleepRow struct {
-	ID               int64
-	Date             time.Time
-	Rating           int64
-	TotalSleep       int
-	DeepSleep        int
-	LightSleep       int
-	RemSleep         int
-	CreatedTimestamp time.Time
-	UpdatedTimestamp time.Time
-	PreviousID       int64
-	NextID           int64
-}
-
-func (q *Queries) ListSleep(ctx context.Context, limit int32) ([]ListSleepRow, error) {
-	rows, err := q.db.Query(ctx, listSleep, limit)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	items := []ListSleepRow{}
-	for rows.Next() {
-		var i ListSleepRow
-		if err := rows.Scan(
-			&i.ID,
-			&i.Date,
-			&i.Rating,
-			&i.TotalSleep,
-			&i.DeepSleep,
-			&i.LightSleep,
-			&i.RemSleep,
-			&i.CreatedTimestamp,
-			&i.UpdatedTimestamp,
-			&i.PreviousID,
-			&i.NextID,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-const listSleepNext = `-- name: ListSleepNext :many
-SELECT id, date, rating, total_sleep, deep_sleep, light_sleep, rem_sleep, created_timestamp, updated_timestamp, previous_id, next_id FROM (
-      SELECT id, date, rating, total_sleep, deep_sleep, light_sleep, rem_sleep, created_timestamp, updated_timestamp,
-             CAST(COALESCE(LAG(id) OVER (ORDER BY date DESC), -1) AS BIGINT) AS previous_id,
-             CAST(COALESCE(LEAD(id) OVER (ORDER BY date DESC), -1) AS BIGINT) AS next_id
-      FROM sleep
-              ) sleeps
-WHERE date <= (
-    SELECT date FROM sleep AS SLP WHERE SLP.id = $1
-)
-ORDER BY date DESC
-LIMIT $2
-`
-
-type ListSleepNextParams struct {
-	ID    int64
-	Limit int32
-}
-
-type ListSleepNextRow struct {
-	ID               int64
-	Date             time.Time
-	Rating           int64
-	TotalSleep       int
-	DeepSleep        int
-	LightSleep       int
-	RemSleep         int
-	CreatedTimestamp time.Time
-	UpdatedTimestamp time.Time
-	PreviousID       int64
-	NextID           int64
-}
-
-func (q *Queries) ListSleepNext(ctx context.Context, arg ListSleepNextParams) ([]ListSleepNextRow, error) {
-	rows, err := q.db.Query(ctx, listSleepNext, arg.ID, arg.Limit)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	items := []ListSleepNextRow{}
-	for rows.Next() {
-		var i ListSleepNextRow
-		if err := rows.Scan(
-			&i.ID,
-			&i.Date,
-			&i.Rating,
-			&i.TotalSleep,
-			&i.DeepSleep,
-			&i.LightSleep,
-			&i.RemSleep,
-			&i.CreatedTimestamp,
-			&i.UpdatedTimestamp,
-			&i.PreviousID,
-			&i.NextID,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-const listSleepPrevious = `-- name: ListSleepPrevious :many
-SELECT id, date, rating, total_sleep, deep_sleep, light_sleep, rem_sleep, created_timestamp, updated_timestamp, previous_id, next_id FROM (
-      SELECT id, date, rating, total_sleep, deep_sleep, light_sleep, rem_sleep, created_timestamp, updated_timestamp,
-             CAST(COALESCE(LAG(id) OVER (ORDER BY date DESC), -1) AS BIGINT) AS previous_id,
-             CAST(COALESCE(LEAD(id) OVER (ORDER BY date DESC), -1) AS BIGINT) AS next_id
-      FROM sleep
-              ) sleeps
-WHERE date >= (
-    SELECT date FROM sleep AS SLP WHERE SLP.id = $1
-)
-ORDER BY date DESC
-LIMIT $2
-`
-
-type ListSleepPreviousParams struct {
-	ID    int64
-	Limit int32
-}
-
-type ListSleepPreviousRow struct {
-	ID               int64
-	Date             time.Time
-	Rating           int64
-	TotalSleep       int
-	DeepSleep        int
-	LightSleep       int
-	RemSleep         int
-	CreatedTimestamp time.Time
-	UpdatedTimestamp time.Time
-	PreviousID       int64
-	NextID           int64
-}
-
-func (q *Queries) ListSleepPrevious(ctx context.Context, arg ListSleepPreviousParams) ([]ListSleepPreviousRow, error) {
-	rows, err := q.db.Query(ctx, listSleepPrevious, arg.ID, arg.Limit)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	items := []ListSleepPreviousRow{}
-	for rows.Next() {
-		var i ListSleepPreviousRow
-		if err := rows.Scan(
-			&i.ID,
-			&i.Date,
-			&i.Rating,
-			&i.TotalSleep,
-			&i.DeepSleep,
-			&i.LightSleep,
-			&i.RemSleep,
-			&i.CreatedTimestamp,
-			&i.UpdatedTimestamp,
-			&i.PreviousID,
-			&i.NextID,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
 const saveHeartRate = `-- name: SaveHeartRate :exec
 INSERT INTO heartrate (date, low, high, average) VALUES ($1, $2, $3, $4) ON CONFLICT (date) DO UPDATE SET low = EXCLUDED.low, high = EXCLUDED.high, average = EXCLUDED.average
 `
@@ -375,4 +188,72 @@ type SaveStressParams struct {
 func (q *Queries) SaveStress(ctx context.Context, arg SaveStressParams) error {
 	_, err := q.db.Exec(ctx, saveStress, arg.Date, arg.HighStressDuration)
 	return err
+}
+
+const sleeps = `-- name: Sleeps :many
+SELECT id, date, rating, total_sleep, deep_sleep, light_sleep, rem_sleep, created_timestamp, updated_timestamp, previous_id, next_id FROM (
+  SELECT id, date, rating, total_sleep, deep_sleep, light_sleep, rem_sleep, created_timestamp, updated_timestamp,
+         CAST(COALESCE(LAG(id) OVER (ORDER BY date DESC), -1) AS BIGINT) AS previous_id,
+         CAST(COALESCE(LEAD(id) OVER (ORDER BY date DESC), -1) AS BIGINT) AS next_id
+  FROM sleep
+) sleeps
+WHERE CASE
+          WHEN 'NEXT' = $1::text THEN date <= (SELECT date FROM sleep AS SLP WHERE SLP.id = $2)
+          WHEN 'PREVIOUS' = $1::text THEN date >= (SELECT date FROM sleep AS SLP WHERE SLP.id = $2)
+          ELSE true
+          END
+ORDER BY date DESC
+LIMIT $3
+`
+
+type SleepsParams struct {
+	QueryType string
+	InputID   int64
+	RowLimit  int32
+}
+
+type SleepsRow struct {
+	ID               int64
+	Date             time.Time
+	Rating           int64
+	TotalSleep       int
+	DeepSleep        int
+	LightSleep       int
+	RemSleep         int
+	CreatedTimestamp time.Time
+	UpdatedTimestamp time.Time
+	PreviousID       int64
+	NextID           int64
+}
+
+func (q *Queries) Sleeps(ctx context.Context, arg SleepsParams) ([]SleepsRow, error) {
+	rows, err := q.db.Query(ctx, sleeps, arg.QueryType, arg.InputID, arg.RowLimit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []SleepsRow{}
+	for rows.Next() {
+		var i SleepsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Date,
+			&i.Rating,
+			&i.TotalSleep,
+			&i.DeepSleep,
+			&i.LightSleep,
+			&i.RemSleep,
+			&i.CreatedTimestamp,
+			&i.UpdatedTimestamp,
+			&i.PreviousID,
+			&i.NextID,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }

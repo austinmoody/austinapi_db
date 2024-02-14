@@ -21,24 +21,28 @@ type SleepList struct {
 
 func main() {
 
+	// TODO how to rename SleepsRow to something better?
 	//populateRandom()
 
-	sleepList := newListSleepExample()
+	//sleepList := newListSleepExample()
+	sleepList := AustinTest("", "")
 
 	log.Printf("Sleep List %v\n", sleepList.Data[0].ID)
 
-	nextSleepList := listSleepNext(sleepList.NextToken)
+	//nextSleepList := listSleepNext(sleepList.NextToken)
+	nextSleepList := AustinTest("NEXT", sleepList.NextToken)
 
 	log.Printf("Sleep List %v\n", sleepList.Data[0].ID)
 
-	previousSleepList := listSleepPrevious(nextSleepList.PreviousToken)
+	//previousSleepList := listSleepPrevious(nextSleepList.PreviousToken)
+	previousSleepList := AustinTest("PREVIOUS", nextSleepList.PreviousToken)
 
 	log.Printf("Sleep List %v\n", sleepList.Data[0].ID)
 
 	log.Println(previousSleepList.PreviousToken)
 }
 
-func listSleepPrevious(previousToken string) SleepList {
+func AustinTest(queryType string, token string) SleepList {
 	connStr := GetDatabaseConnectionString()
 	ctx := context.Background()
 
@@ -53,13 +57,21 @@ func listSleepPrevious(previousToken string) SleepList {
 	s, _ := sqids.New(sqids.Options{
 		MinLength: 10,
 	})
-	numbers := s.Decode(previousToken)
-
-	params := austinapi_db.ListSleepPreviousParams{
-		ID:    int64(numbers[0]),
-		Limit: 10,
+	number := s.Decode(token)
+	var idFromToken int64
+	if len(number) == 0 {
+		idFromToken = 0
+	} else {
+		idFromToken = int64(number[0])
 	}
-	sleeps, err := apiDb.ListSleepPrevious(ctx, params)
+
+	params := austinapi_db.SleepsParams{
+		QueryType: queryType,
+		InputID:   idFromToken,
+		RowLimit:  10,
+	}
+
+	sleeps, err := apiDb.Sleeps(ctx, params)
 	if err != nil {
 		log.Fatalf("Error getting list of sleep %v\n", err)
 	}
@@ -86,7 +98,7 @@ func listSleepPrevious(previousToken string) SleepList {
 		nextId = id
 	}
 
-	mySleeps := austinapi_db.ListSleepPreviousRowToSleep(sleeps)
+	mySleeps := austinapi_db.AustinRowToSleep(sleeps)
 
 	sleepList := SleepList{
 		Data:          mySleeps,
@@ -95,144 +107,6 @@ func listSleepPrevious(previousToken string) SleepList {
 	}
 
 	return sleepList
-}
-
-func listSleepNext(nextToken string) SleepList {
-	connStr := GetDatabaseConnectionString()
-	ctx := context.Background()
-
-	conn, err := pgx.Connect(ctx, connStr)
-	if err != nil {
-		log.Fatalf("DB Connection error: %v", err)
-	}
-	defer conn.Close(ctx)
-
-	apiDb := austinapi_db.New(conn)
-
-	s, _ := sqids.New(sqids.Options{
-		MinLength: 10,
-	})
-	numbers := s.Decode(nextToken)
-
-	params := austinapi_db.ListSleepNextParams{
-		ID:    int64(numbers[0]),
-		Limit: 10,
-	}
-	sleeps, err := apiDb.ListSleepNext(ctx, params)
-	if err != nil {
-		log.Fatalf("Error getting list of sleep %v\n", err)
-	}
-
-	var previousId string
-	if sleeps[0].PreviousID < 1 {
-		previousId = ""
-	} else {
-		s, _ := sqids.New(sqids.Options{
-			MinLength: 10,
-		})
-		id, _ := s.Encode([]uint64{uint64(sleeps[0].PreviousID)})
-		previousId = id
-	}
-
-	var nextId string
-	if sleeps[len(sleeps)-1].NextID < 1 {
-		nextId = ""
-	} else {
-		s, _ := sqids.New(sqids.Options{
-			MinLength: 10,
-		})
-		id, _ := s.Encode([]uint64{uint64(sleeps[len(sleeps)-1].NextID)})
-		nextId = id
-	}
-
-	mySleeps := austinapi_db.ListSleepNextRowToSleep(sleeps)
-
-	sleepList := SleepList{
-		Data:          mySleeps,
-		NextToken:     nextId,
-		PreviousToken: previousId,
-	}
-
-	return sleepList
-}
-
-func newListSleepExample() SleepList {
-	connStr := GetDatabaseConnectionString()
-	ctx := context.Background()
-
-	conn, err := pgx.Connect(ctx, connStr)
-	if err != nil {
-		log.Fatalf("DB Connection error: %v", err)
-	}
-	defer conn.Close(ctx)
-
-	apiDb := austinapi_db.New(conn)
-
-	sleeps, err := apiDb.ListSleep(ctx, 10)
-	if err != nil {
-		log.Fatalf("Error getting list of sleep %v\n", err)
-	}
-
-	var previousId string
-	if sleeps[0].PreviousID < 1 {
-		previousId = ""
-	} else {
-		s, _ := sqids.New(sqids.Options{
-			MinLength: 10,
-		})
-		id, _ := s.Encode([]uint64{uint64(sleeps[0].PreviousID)})
-		previousId = id
-	}
-
-	var nextId string
-	if sleeps[len(sleeps)-1].NextID < 1 {
-		nextId = ""
-	} else {
-		s, _ := sqids.New(sqids.Options{
-			MinLength: 10,
-		})
-		id, _ := s.Encode([]uint64{uint64(sleeps[len(sleeps)-1].NextID)})
-		nextId = id
-	}
-
-	log.Printf("Previous ID: %v\n", previousId)
-	log.Printf("Next ID: %v\n", nextId)
-
-	mySleeps := austinapi_db.ListSleepRowToSleep(sleeps)
-
-	sleepList := SleepList{
-		Data:          mySleeps,
-		NextToken:     nextId,
-		PreviousToken: previousId,
-	}
-
-	return sleepList
-
-	//jsonBytes, err := json.Marshal(sleepList)
-	//if err != nil {
-	//	log.Fatalf("error marshaling JSON response: %v", err)
-	//	return
-	//}
-	//log.Println(string(jsonBytes))
-
-}
-
-func ConvertListSleepNextToSleep(rows []austinapi_db.ListSleepNextRow) []austinapi_db.Sleep {
-	sleeps := make([]austinapi_db.Sleep, len(rows))
-	for i, row := range rows {
-		sleeps[i] = austinapi_db.Sleep{
-			ID:               row.ID,
-			Date:             row.Date,
-			Rating:           row.Rating,
-			TotalSleep:       row.TotalSleep,
-			DeepSleep:        row.DeepSleep,
-			LightSleep:       row.LightSleep,
-			RemSleep:         row.RemSleep,
-			CreatedTimestamp: row.CreatedTimestamp,
-			UpdatedTimestamp: row.UpdatedTimestamp,
-		}
-	}
-	return sleeps
 }
 
 func getSleepExample() {

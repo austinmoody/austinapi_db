@@ -10,44 +10,22 @@ SELECT * FROM sleep WHERE date = $1;
 -- name: GetSleepDateById :many
 SELECT date FROM sleep WHERE id = $1;
 
--- name: ListSleep :many
+-- name: Sleeps :many
 SELECT * FROM (
-    SELECT *,
-           CAST(COALESCE(LAG(id) OVER (ORDER BY date DESC), -1) AS BIGINT) AS previous_id,
-           CAST(COALESCE(LEAD(id) OVER (ORDER BY date DESC), -1) AS BIGINT) AS next_id
-    FROM sleep
+  SELECT *,
+         CAST(COALESCE(LAG(id) OVER (ORDER BY date DESC), -1) AS BIGINT) AS previous_id,
+         CAST(COALESCE(LEAD(id) OVER (ORDER BY date DESC), -1) AS BIGINT) AS next_id
+  FROM sleep
 ) sleeps
+WHERE CASE
+          WHEN 'NEXT' = sqlc.arg(query_type)::text THEN date <= (SELECT date FROM sleep AS SLP WHERE SLP.id = sqlc.arg(input_id))
+          WHEN 'PREVIOUS' = sqlc.arg(query_type)::text THEN date >= (SELECT date FROM sleep AS SLP WHERE SLP.id = sqlc.arg(input_id))
+          ELSE true
+          END
 ORDER BY date DESC
-LIMIT $1
+LIMIT sqlc.arg(row_limit)
 ;
 
--- name: ListSleepNext :many
-SELECT * FROM (
-      SELECT *,
-             CAST(COALESCE(LAG(id) OVER (ORDER BY date DESC), -1) AS BIGINT) AS previous_id,
-             CAST(COALESCE(LEAD(id) OVER (ORDER BY date DESC), -1) AS BIGINT) AS next_id
-      FROM sleep
-              ) sleeps
-WHERE date <= (
-    SELECT date FROM sleep AS SLP WHERE SLP.id = $1
-)
-ORDER BY date DESC
-LIMIT $2
-;
-
--- name: ListSleepPrevious :many
-SELECT * FROM (
-      SELECT *,
-             CAST(COALESCE(LAG(id) OVER (ORDER BY date DESC), -1) AS BIGINT) AS previous_id,
-             CAST(COALESCE(LEAD(id) OVER (ORDER BY date DESC), -1) AS BIGINT) AS next_id
-      FROM sleep
-              ) sleeps
-WHERE date >= (
-    SELECT date FROM sleep AS SLP WHERE SLP.id = $1
-)
-ORDER BY date DESC
-LIMIT $2
-;
 -- name: SavePreparedness :exec
 INSERT INTO preparedness (date, rating) VALUES ($1, $2) ON CONFLICT (date) DO UPDATE SET rating = EXCLUDED.rating;
 

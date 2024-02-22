@@ -21,8 +21,7 @@ type SleepList struct {
 
 func main() {
 
-	// TODO how to rename SleepsRow to something better?
-	//populateRandom()
+	populateRandom()
 
 	//sleepList := newListSleepExample()
 	sleepList := AustinTest("", "")

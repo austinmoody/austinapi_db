@@ -1,5 +1,5 @@
 CREATE TABLE preparedness (
-    id uuid DEFAULT gen_random_uuid(),
+    id BIGINT GENERATED ALWAYS AS IDENTITY ,
     date DATE NOT NULL,
     rating INTEGER NOT NULL,
     created_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,

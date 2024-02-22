@@ -1,5 +1,5 @@
 CREATE TABLE stress (
-    id uuid DEFAULT gen_random_uuid(),
+    id BIGINT GENERATED ALWAYS AS IDENTITY,
     date DATE NOT NULL,
     high_stress_duration INTEGER NOT NULL, -- milliseconds
     created_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,

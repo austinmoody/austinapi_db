@@ -10,6 +10,96 @@ import (
 	"time"
 )
 
+const getPreparedness = `-- name: GetPreparedness :many
+SELECT id, date, rating, created_timestamp, updated_timestamp FROM preparedness WHERE id = $1
+`
+
+func (q *Queries) GetPreparedness(ctx context.Context, id int64) ([]Preparedness, error) {
+	rows, err := q.db.Query(ctx, getPreparedness, id)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []Preparedness{}
+	for rows.Next() {
+		var i Preparedness
+		if err := rows.Scan(
+			&i.ID,
+			&i.Date,
+			&i.Rating,
+			&i.CreatedTimestamp,
+			&i.UpdatedTimestamp,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getPreparednessByDate = `-- name: GetPreparednessByDate :many
+SELECT id, date, rating, created_timestamp, updated_timestamp FROM preparedness WHERE date = $1
+`
+
+func (q *Queries) GetPreparednessByDate(ctx context.Context, date time.Time) ([]Preparedness, error) {
+	rows, err := q.db.Query(ctx, getPreparednessByDate, date)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []Preparedness{}
+	for rows.Next() {
+		var i Preparedness
+		if err := rows.Scan(
+			&i.ID,
+			&i.Date,
+			&i.Rating,
+			&i.CreatedTimestamp,
+			&i.UpdatedTimestamp,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getPreparednessById = `-- name: GetPreparednessById :many
+SELECT id, date, rating, created_timestamp, updated_timestamp FROM preparedness WHERE id = $1
+`
+
+func (q *Queries) GetPreparednessById(ctx context.Context, id int64) ([]Preparedness, error) {
+	rows, err := q.db.Query(ctx, getPreparednessById, id)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []Preparedness{}
+	for rows.Next() {
+		var i Preparedness
+		if err := rows.Scan(
+			&i.ID,
+			&i.Date,
+			&i.Rating,
+			&i.CreatedTimestamp,
+			&i.UpdatedTimestamp,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getSleep = `-- name: GetSleep :many
 SELECT id, date, rating, total_sleep, deep_sleep, light_sleep, rem_sleep, created_timestamp, updated_timestamp FROM sleep WHERE id = $1
 `
@@ -95,6 +185,66 @@ func (q *Queries) GetSleepDateById(ctx context.Context, id int64) ([]time.Time, 
 			return nil, err
 		}
 		items = append(items, date)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listPreparedness = `-- name: ListPreparedness :many
+SELECT id, date, rating, created_timestamp, updated_timestamp, previous_id, next_id FROM (
+      SELECT id, date, rating, created_timestamp, updated_timestamp,
+             CAST(COALESCE(LAG(id) OVER (ORDER BY date DESC), -1) AS BIGINT) AS previous_id,
+             CAST(COALESCE(LEAD(id) OVER (ORDER BY date DESC), -1) AS BIGINT) AS next_id
+      FROM preparedness
+) listpreparedness
+WHERE CASE
+          WHEN 'NEXT' = $1::text THEN date <= (SELECT date FROM preparedness AS SLP WHERE SLP.id = $2)
+          WHEN 'PREVIOUS' = $1::text THEN date >= (SELECT date FROM preparedness AS SLP WHERE SLP.id = $2)
+          ELSE true
+          END
+ORDER BY date DESC
+LIMIT $3
+`
+
+type ListPreparednessParams struct {
+	QueryType string
+	InputID   int64
+	RowLimit  int32
+}
+
+type ListPreparednessRow struct {
+	ID               int64
+	Date             time.Time
+	Rating           int
+	CreatedTimestamp time.Time
+	UpdatedTimestamp time.Time
+	PreviousID       int64
+	NextID           int64
+}
+
+func (q *Queries) ListPreparedness(ctx context.Context, arg ListPreparednessParams) ([]ListPreparednessRow, error) {
+	rows, err := q.db.Query(ctx, listPreparedness, arg.QueryType, arg.InputID, arg.RowLimit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListPreparednessRow{}
+	for rows.Next() {
+		var i ListPreparednessRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Date,
+			&i.Rating,
+			&i.CreatedTimestamp,
+			&i.UpdatedTimestamp,
+			&i.PreviousID,
+			&i.NextID,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err

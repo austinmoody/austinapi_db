@@ -29,6 +29,31 @@ LIMIT sqlc.arg(row_limit)
 -- name: SavePreparedness :exec
 INSERT INTO preparedness (date, rating) VALUES ($1, $2) ON CONFLICT (date) DO UPDATE SET rating = EXCLUDED.rating;
 
+-- name: GetPreparedness :many
+SELECT * FROM preparedness WHERE id = $1;
+
+-- name: GetPreparednessByDate :many
+SELECT * FROM preparedness WHERE date = $1;
+
+-- name: GetPreparednessById :many
+SELECT * FROM preparedness WHERE id = $1;
+
+-- name: ListPreparedness :many
+SELECT * FROM (
+      SELECT *,
+             CAST(COALESCE(LAG(id) OVER (ORDER BY date DESC), -1) AS BIGINT) AS previous_id,
+             CAST(COALESCE(LEAD(id) OVER (ORDER BY date DESC), -1) AS BIGINT) AS next_id
+      FROM preparedness
+) listpreparedness
+WHERE CASE
+          WHEN 'NEXT' = sqlc.arg(query_type)::text THEN date <= (SELECT date FROM preparedness AS SLP WHERE SLP.id = sqlc.arg(input_id))
+          WHEN 'PREVIOUS' = sqlc.arg(query_type)::text THEN date >= (SELECT date FROM preparedness AS SLP WHERE SLP.id = sqlc.arg(input_id))
+          ELSE true
+          END
+ORDER BY date DESC
+LIMIT sqlc.arg(row_limit)
+;
+
 -- name: SaveSpo2 :exec
 INSERT INTO spo2 (date, average_spo2) VALUES ($1, $2) ON CONFLICT (date) DO UPDATE SET average_spo2 = EXCLUDED.average_spo2;
 

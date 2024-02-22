@@ -1,5 +1,5 @@
 CREATE TABLE heartrate (
-    id uuid DEFAULT gen_random_uuid(),
+    id BIGINT GENERATED ALWAYS AS IDENTITY,
     date DATE NOT NULL,
     high INTEGER NOT NULL,
     low INTEGER NOT NULL,

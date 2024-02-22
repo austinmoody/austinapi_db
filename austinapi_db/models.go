@@ -6,12 +6,10 @@ package austinapi_db
 
 import (
 	"time"
-
-	"github.com/google/uuid"
 )
 
 type Heartrate struct {
-	ID               uuid.UUID
+	ID               int64
 	Date             time.Time
 	High             int
 	Low              int
@@ -21,7 +19,7 @@ type Heartrate struct {
 }
 
 type Preparedness struct {
-	ID               uuid.UUID
+	ID               int64
 	Date             time.Time
 	Rating           int
 	CreatedTimestamp time.Time
@@ -41,7 +39,7 @@ type Sleep struct {
 }
 
 type Spo2 struct {
-	ID               uuid.UUID
+	ID               int64
 	Date             time.Time
 	AverageSpo2      float64
 	CreatedTimestamp time.Time
@@ -49,7 +47,7 @@ type Spo2 struct {
 }
 
 type Stress struct {
-	ID                 uuid.UUID
+	ID                 int64
 	Date               time.Time
 	HighStressDuration int
 	CreatedTimestamp   time.Time

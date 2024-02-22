@@ -1,5 +1,5 @@
 CREATE TABLE spo2 (
-    id uuid DEFAULT gen_random_uuid(),
+    id BIGINT GENERATED ALWAYS AS IDENTITY,
     date DATE NOT NULL,
     average_spo2 DOUBLE PRECISION NOT NULL,
     created_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,

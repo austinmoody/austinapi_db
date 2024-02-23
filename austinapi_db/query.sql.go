@@ -10,23 +10,23 @@ import (
 	"time"
 )
 
-const getPreparedness = `-- name: GetPreparedness :many
-SELECT id, date, rating, created_timestamp, updated_timestamp FROM preparedness WHERE id = $1
+const getReadyScore = `-- name: GetReadyScore :many
+SELECT id, date, score, created_timestamp, updated_timestamp FROM readyscore WHERE id = $1
 `
 
-func (q *Queries) GetPreparedness(ctx context.Context, id int64) ([]Preparedness, error) {
-	rows, err := q.db.Query(ctx, getPreparedness, id)
+func (q *Queries) GetReadyScore(ctx context.Context, id int64) ([]Readyscore, error) {
+	rows, err := q.db.Query(ctx, getReadyScore, id)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	items := []Preparedness{}
+	items := []Readyscore{}
 	for rows.Next() {
-		var i Preparedness
+		var i Readyscore
 		if err := rows.Scan(
 			&i.ID,
 			&i.Date,
-			&i.Rating,
+			&i.Score,
 			&i.CreatedTimestamp,
 			&i.UpdatedTimestamp,
 		); err != nil {
@@ -40,23 +40,23 @@ func (q *Queries) GetPreparedness(ctx context.Context, id int64) ([]Preparedness
 	return items, nil
 }
 
-const getPreparednessByDate = `-- name: GetPreparednessByDate :many
-SELECT id, date, rating, created_timestamp, updated_timestamp FROM preparedness WHERE date = $1
+const getReadyScoreByDate = `-- name: GetReadyScoreByDate :many
+SELECT id, date, score, created_timestamp, updated_timestamp FROM readyscore WHERE date = $1
 `
 
-func (q *Queries) GetPreparednessByDate(ctx context.Context, date time.Time) ([]Preparedness, error) {
-	rows, err := q.db.Query(ctx, getPreparednessByDate, date)
+func (q *Queries) GetReadyScoreByDate(ctx context.Context, date time.Time) ([]Readyscore, error) {
+	rows, err := q.db.Query(ctx, getReadyScoreByDate, date)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	items := []Preparedness{}
+	items := []Readyscore{}
 	for rows.Next() {
-		var i Preparedness
+		var i Readyscore
 		if err := rows.Scan(
 			&i.ID,
 			&i.Date,
-			&i.Rating,
+			&i.Score,
 			&i.CreatedTimestamp,
 			&i.UpdatedTimestamp,
 		); err != nil {
@@ -70,25 +70,85 @@ func (q *Queries) GetPreparednessByDate(ctx context.Context, date time.Time) ([]
 	return items, nil
 }
 
-const getPreparednessById = `-- name: GetPreparednessById :many
-SELECT id, date, rating, created_timestamp, updated_timestamp FROM preparedness WHERE id = $1
+const getReadyScoreById = `-- name: GetReadyScoreById :many
+SELECT id, date, score, created_timestamp, updated_timestamp FROM readyscore WHERE id = $1
 `
 
-func (q *Queries) GetPreparednessById(ctx context.Context, id int64) ([]Preparedness, error) {
-	rows, err := q.db.Query(ctx, getPreparednessById, id)
+func (q *Queries) GetReadyScoreById(ctx context.Context, id int64) ([]Readyscore, error) {
+	rows, err := q.db.Query(ctx, getReadyScoreById, id)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	items := []Preparedness{}
+	items := []Readyscore{}
 	for rows.Next() {
-		var i Preparedness
+		var i Readyscore
 		if err := rows.Scan(
 			&i.ID,
 			&i.Date,
-			&i.Rating,
+			&i.Score,
 			&i.CreatedTimestamp,
 			&i.UpdatedTimestamp,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getReadyScores = `-- name: GetReadyScores :many
+SELECT id, date, score, created_timestamp, updated_timestamp, previous_id, next_id FROM (
+      SELECT id, date, score, created_timestamp, updated_timestamp,
+             CAST(COALESCE(LAG(id) OVER (ORDER BY date DESC), -1) AS BIGINT) AS previous_id,
+             CAST(COALESCE(LEAD(id) OVER (ORDER BY date DESC), -1) AS BIGINT) AS next_id
+      FROM readyscore
+) listreadyscores
+WHERE CASE
+          WHEN 'NEXT' = $1::text THEN date <= (SELECT date FROM readyscore AS SLP WHERE SLP.id = $2)
+          WHEN 'PREVIOUS' = $1::text THEN date >= (SELECT date FROM readyscore AS SLP WHERE SLP.id = $2)
+          ELSE true
+          END
+ORDER BY date DESC
+LIMIT $3
+`
+
+type GetReadyScoresParams struct {
+	QueryType string
+	InputID   int64
+	RowLimit  int32
+}
+
+type GetReadyScoresRow struct {
+	ID               int64
+	Date             time.Time
+	Score            int
+	CreatedTimestamp time.Time
+	UpdatedTimestamp time.Time
+	PreviousID       int64
+	NextID           int64
+}
+
+func (q *Queries) GetReadyScores(ctx context.Context, arg GetReadyScoresParams) ([]GetReadyScoresRow, error) {
+	rows, err := q.db.Query(ctx, getReadyScores, arg.QueryType, arg.InputID, arg.RowLimit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []GetReadyScoresRow{}
+	for rows.Next() {
+		var i GetReadyScoresRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Date,
+			&i.Score,
+			&i.CreatedTimestamp,
+			&i.UpdatedTimestamp,
+			&i.PreviousID,
+			&i.NextID,
 		); err != nil {
 			return nil, err
 		}
@@ -192,66 +252,6 @@ func (q *Queries) GetSleepDateById(ctx context.Context, id int64) ([]time.Time, 
 	return items, nil
 }
 
-const listPreparedness = `-- name: ListPreparedness :many
-SELECT id, date, rating, created_timestamp, updated_timestamp, previous_id, next_id FROM (
-      SELECT id, date, rating, created_timestamp, updated_timestamp,
-             CAST(COALESCE(LAG(id) OVER (ORDER BY date DESC), -1) AS BIGINT) AS previous_id,
-             CAST(COALESCE(LEAD(id) OVER (ORDER BY date DESC), -1) AS BIGINT) AS next_id
-      FROM preparedness
-) listpreparedness
-WHERE CASE
-          WHEN 'NEXT' = $1::text THEN date <= (SELECT date FROM preparedness AS SLP WHERE SLP.id = $2)
-          WHEN 'PREVIOUS' = $1::text THEN date >= (SELECT date FROM preparedness AS SLP WHERE SLP.id = $2)
-          ELSE true
-          END
-ORDER BY date DESC
-LIMIT $3
-`
-
-type ListPreparednessParams struct {
-	QueryType string
-	InputID   int64
-	RowLimit  int32
-}
-
-type ListPreparednessRow struct {
-	ID               int64
-	Date             time.Time
-	Rating           int
-	CreatedTimestamp time.Time
-	UpdatedTimestamp time.Time
-	PreviousID       int64
-	NextID           int64
-}
-
-func (q *Queries) ListPreparedness(ctx context.Context, arg ListPreparednessParams) ([]ListPreparednessRow, error) {
-	rows, err := q.db.Query(ctx, listPreparedness, arg.QueryType, arg.InputID, arg.RowLimit)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	items := []ListPreparednessRow{}
-	for rows.Next() {
-		var i ListPreparednessRow
-		if err := rows.Scan(
-			&i.ID,
-			&i.Date,
-			&i.Rating,
-			&i.CreatedTimestamp,
-			&i.UpdatedTimestamp,
-			&i.PreviousID,
-			&i.NextID,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
 const saveHeartRate = `-- name: SaveHeartRate :exec
 INSERT INTO heartrate (date, low, high, average) VALUES ($1, $2, $3, $4) ON CONFLICT (date) DO UPDATE SET low = EXCLUDED.low, high = EXCLUDED.high, average = EXCLUDED.average
 `
@@ -273,17 +273,17 @@ func (q *Queries) SaveHeartRate(ctx context.Context, arg SaveHeartRateParams) er
 	return err
 }
 
-const savePreparedness = `-- name: SavePreparedness :exec
-INSERT INTO preparedness (date, rating) VALUES ($1, $2) ON CONFLICT (date) DO UPDATE SET rating = EXCLUDED.rating
+const saveReadyScore = `-- name: SaveReadyScore :exec
+INSERT INTO readyscore (date, score) VALUES ($1, $2) ON CONFLICT (date) DO UPDATE SET score = EXCLUDED.score
 `
 
-type SavePreparednessParams struct {
-	Date   time.Time
-	Rating int
+type SaveReadyScoreParams struct {
+	Date  time.Time
+	Score int
 }
 
-func (q *Queries) SavePreparedness(ctx context.Context, arg SavePreparednessParams) error {
-	_, err := q.db.Exec(ctx, savePreparedness, arg.Date, arg.Rating)
+func (q *Queries) SaveReadyScore(ctx context.Context, arg SaveReadyScoreParams) error {
+	_, err := q.db.Exec(ctx, saveReadyScore, arg.Date, arg.Score)
 	return err
 }
 

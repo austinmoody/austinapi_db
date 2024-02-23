@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"github.com/austinmoody/austinapi_db/austinapi_db"
 	"github.com/jackc/pgx/v5"
 	"github.com/sqids/sqids-go"
@@ -14,6 +15,29 @@ var (
 	IdHasher   sqids.Sqids
 	SqidLength string
 )
+
+type ReadyScores struct {
+	Data          []ReadyScore `json:"data"`
+	NextToken     string       `json:"next_token"`
+	PreviousToken string       `json:"previous_token"`
+}
+
+type ReadyScore struct {
+	*austinapi_db.GetReadyScoresRow
+}
+
+type ReadyScoresResult []austinapi_db.GetReadyScoresRow
+type ReadyScoreItem austinapi_db.GetReadyScoresRow
+
+func (rsr ReadyScoresResult) ToReadyScores() ReadyScores {
+	readyScores := ReadyScores{
+		Data: make([]ReadyScore, len(rsr)),
+	}
+	for i, item := range rsr {
+		readyScores.Data[i] = ReadyScore{&item}
+	}
+	return readyScores
+}
 
 func init() {
 	var sqidLength uint8 = 20
@@ -32,7 +56,7 @@ func GetIdFromToken(token string) int64 {
 }
 
 func main() {
-	//populateRandom()
+	//`populateRandom()
 
 	GetList("", "")
 }
@@ -56,22 +80,22 @@ func populateRandom() {
 	for i := 0; i < 50; i++ {
 		randomHours := rng.Intn(8674) + 1
 
-		params := austinapi_db.SavePreparednessParams{
-			Date:   time.Now().Add(time.Hour * (-1 * time.Duration(randomHours))),
-			Rating: rng.Intn(100) - 1,
+		params := austinapi_db.SaveReadyScoreParams{
+			Date:  time.Now().Add(time.Hour * (-1 * time.Duration(randomHours))),
+			Score: rng.Intn(100) - 1,
 		}
 
-		err = apiDb.SavePreparedness(ctx, params)
+		err = apiDb.SaveReadyScore(ctx, params)
 		if err != nil {
 			log.Fatalf("Insert error: %v", err)
 		}
 
-		mySleep, err := apiDb.GetPreparednessByDate(ctx, params.Date)
+		dbResult, err := apiDb.GetReadyScoreByDate(ctx, params.Date)
 		if err != nil {
-			log.Fatalf("Error Getting Preparedness By Date: %v", err)
+			log.Fatalf("Error Getting Ready Score By Date: %v", err)
 		}
 
-		log.Printf("\nPreparedness: %v\n", mySleep)
+		log.Printf("\nReady Score: %v\n", dbResult)
 
 	}
 
@@ -81,7 +105,7 @@ func GetList(queryType string, queryToken string) {
 
 	var ListRowLimit int32 = 5
 
-	params := austinapi_db.ListPreparednessParams{
+	params := austinapi_db.GetReadyScoresParams{
 		QueryType: "",
 		InputID:   0,
 		RowLimit:  ListRowLimit,
@@ -107,11 +131,21 @@ func GetList(queryType string, queryToken string) {
 
 	apiDb := austinapi_db.New(conn)
 
-	results, err := apiDb.ListPreparedness(ctx, params)
+	results, err := apiDb.GetReadyScores(ctx, params)
 	if err != nil {
-		log.Fatalf("issue pulling preparedness: %v", err)
+		log.Fatalf("issue pulling ready scores: %v", err)
 	}
 
 	log.Printf("Total results %d\n", len(results))
+
+	rsr := ReadyScoresResult(results)
+	readyScores := rsr.ToReadyScores()
+
+	jsonBytes, err := json.Marshal(readyScores)
+	if err != nil {
+		log.Fatalf("error with json marshall: %v", err)
+	}
+
+	log.Print(string(jsonBytes))
 
 }

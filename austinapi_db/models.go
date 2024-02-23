@@ -18,10 +18,10 @@ type Heartrate struct {
 	UpdatedTimestamp time.Time
 }
 
-type Preparedness struct {
+type Readyscore struct {
 	ID               int64
 	Date             time.Time
-	Rating           int
+	Score            int
 	CreatedTimestamp time.Time
 	UpdatedTimestamp time.Time
 }

@@ -26,28 +26,28 @@ ORDER BY date DESC
 LIMIT sqlc.arg(row_limit)
 ;
 
--- name: SavePreparedness :exec
-INSERT INTO preparedness (date, rating) VALUES ($1, $2) ON CONFLICT (date) DO UPDATE SET rating = EXCLUDED.rating;
+-- name: SaveReadyScore :exec
+INSERT INTO readyscore (date, score) VALUES ($1, $2) ON CONFLICT (date) DO UPDATE SET score = EXCLUDED.score;
 
--- name: GetPreparedness :many
-SELECT * FROM preparedness WHERE id = $1;
+-- name: GetReadyScore :many
+SELECT * FROM readyscore WHERE id = $1;
 
--- name: GetPreparednessByDate :many
-SELECT * FROM preparedness WHERE date = $1;
+-- name: GetReadyScoreByDate :many
+SELECT * FROM readyscore WHERE date = $1;
 
--- name: GetPreparednessById :many
-SELECT * FROM preparedness WHERE id = $1;
+-- name: GetReadyScoreById :many
+SELECT * FROM readyscore WHERE id = $1;
 
--- name: ListPreparedness :many
+-- name: GetReadyScores :many
 SELECT * FROM (
       SELECT *,
              CAST(COALESCE(LAG(id) OVER (ORDER BY date DESC), -1) AS BIGINT) AS previous_id,
              CAST(COALESCE(LEAD(id) OVER (ORDER BY date DESC), -1) AS BIGINT) AS next_id
-      FROM preparedness
-) listpreparedness
+      FROM readyscore
+) listreadyscores
 WHERE CASE
-          WHEN 'NEXT' = sqlc.arg(query_type)::text THEN date <= (SELECT date FROM preparedness AS SLP WHERE SLP.id = sqlc.arg(input_id))
-          WHEN 'PREVIOUS' = sqlc.arg(query_type)::text THEN date >= (SELECT date FROM preparedness AS SLP WHERE SLP.id = sqlc.arg(input_id))
+          WHEN 'NEXT' = sqlc.arg(query_type)::text THEN date <= (SELECT date FROM readyscore AS SLP WHERE SLP.id = sqlc.arg(input_id))
+          WHEN 'PREVIOUS' = sqlc.arg(query_type)::text THEN date >= (SELECT date FROM readyscore AS SLP WHERE SLP.id = sqlc.arg(input_id))
           ELSE true
           END
 ORDER BY date DESC

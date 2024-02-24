@@ -117,19 +117,19 @@ LIMIT $3
 `
 
 type GetReadyScoresParams struct {
-	QueryType string
-	InputID   int64
-	RowLimit  int32
+	QueryType string `json:"query_type"`
+	InputID   int64  `json:"input_id"`
+	RowLimit  int32  `json:"row_limit"`
 }
 
 type GetReadyScoresRow struct {
-	ID               int64
-	Date             time.Time
-	Score            int
-	CreatedTimestamp time.Time
-	UpdatedTimestamp time.Time
-	PreviousID       int64
-	NextID           int64
+	ID               int64     `json:"id"`
+	Date             time.Time `json:"date"`
+	Score            int       `json:"score"`
+	CreatedTimestamp time.Time `json:"created_timestamp"`
+	UpdatedTimestamp time.Time `json:"updated_timestamp"`
+	PreviousID       int64     `json:"previous_id"`
+	NextID           int64     `json:"next_id"`
 }
 
 func (q *Queries) GetReadyScores(ctx context.Context, arg GetReadyScoresParams) ([]GetReadyScoresRow, error) {
@@ -160,12 +160,66 @@ func (q *Queries) GetReadyScores(ctx context.Context, arg GetReadyScoresParams) 
 	return items, nil
 }
 
-const getSleep = `-- name: GetSleep :many
-SELECT id, date, rating, total_sleep, deep_sleep, light_sleep, rem_sleep, created_timestamp, updated_timestamp FROM sleep WHERE id = $1
+const getSleep = `-- name: GetSleep :one
+SELECT id, date, rating, total_sleep, deep_sleep, light_sleep, rem_sleep, created_timestamp, updated_timestamp
+FROM sleep
+WHERE id = $1
 `
 
-func (q *Queries) GetSleep(ctx context.Context, id int64) ([]Sleep, error) {
-	rows, err := q.db.Query(ctx, getSleep, id)
+func (q *Queries) GetSleep(ctx context.Context, id int64) (Sleep, error) {
+	row := q.db.QueryRow(ctx, getSleep, id)
+	var i Sleep
+	err := row.Scan(
+		&i.ID,
+		&i.Date,
+		&i.Rating,
+		&i.TotalSleep,
+		&i.DeepSleep,
+		&i.LightSleep,
+		&i.RemSleep,
+		&i.CreatedTimestamp,
+		&i.UpdatedTimestamp,
+	)
+	return i, err
+}
+
+const getSleepByDate = `-- name: GetSleepByDate :one
+SELECT id, date, rating, total_sleep, deep_sleep, light_sleep, rem_sleep, created_timestamp, updated_timestamp
+FROM sleep
+WHERE date = $1
+`
+
+func (q *Queries) GetSleepByDate(ctx context.Context, date time.Time) (Sleep, error) {
+	row := q.db.QueryRow(ctx, getSleepByDate, date)
+	var i Sleep
+	err := row.Scan(
+		&i.ID,
+		&i.Date,
+		&i.Rating,
+		&i.TotalSleep,
+		&i.DeepSleep,
+		&i.LightSleep,
+		&i.RemSleep,
+		&i.CreatedTimestamp,
+		&i.UpdatedTimestamp,
+	)
+	return i, err
+}
+
+const getSleeps = `-- name: GetSleeps :many
+SELECT id, date, rating, total_sleep, deep_sleep, light_sleep, rem_sleep, created_timestamp, updated_timestamp
+FROM sleep
+ORDER BY date DESC
+LIMIT $2 OFFSET $1
+`
+
+type GetSleepsParams struct {
+	RowOffset int32 `json:"row_offset"`
+	RowLimit  int32 `json:"row_limit"`
+}
+
+func (q *Queries) GetSleeps(ctx context.Context, arg GetSleepsParams) ([]Sleep, error) {
+	rows, err := q.db.Query(ctx, getSleeps, arg.RowOffset, arg.RowLimit)
 	if err != nil {
 		return nil, err
 	}
@@ -187,64 +241,6 @@ func (q *Queries) GetSleep(ctx context.Context, id int64) ([]Sleep, error) {
 			return nil, err
 		}
 		items = append(items, i)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-const getSleepByDate = `-- name: GetSleepByDate :many
-SELECT id, date, rating, total_sleep, deep_sleep, light_sleep, rem_sleep, created_timestamp, updated_timestamp FROM sleep WHERE date = $1
-`
-
-func (q *Queries) GetSleepByDate(ctx context.Context, date time.Time) ([]Sleep, error) {
-	rows, err := q.db.Query(ctx, getSleepByDate, date)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	items := []Sleep{}
-	for rows.Next() {
-		var i Sleep
-		if err := rows.Scan(
-			&i.ID,
-			&i.Date,
-			&i.Rating,
-			&i.TotalSleep,
-			&i.DeepSleep,
-			&i.LightSleep,
-			&i.RemSleep,
-			&i.CreatedTimestamp,
-			&i.UpdatedTimestamp,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-const getSleepDateById = `-- name: GetSleepDateById :many
-SELECT date FROM sleep WHERE id = $1
-`
-
-func (q *Queries) GetSleepDateById(ctx context.Context, id int64) ([]time.Time, error) {
-	rows, err := q.db.Query(ctx, getSleepDateById, id)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	items := []time.Time{}
-	for rows.Next() {
-		var date time.Time
-		if err := rows.Scan(&date); err != nil {
-			return nil, err
-		}
-		items = append(items, date)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err
@@ -257,10 +253,10 @@ INSERT INTO heartrate (date, low, high, average) VALUES ($1, $2, $3, $4) ON CONF
 `
 
 type SaveHeartRateParams struct {
-	Date    time.Time
-	Low     int
-	High    int
-	Average int
+	Date    time.Time `json:"date"`
+	Low     int       `json:"low"`
+	High    int       `json:"high"`
+	Average int       `json:"average"`
 }
 
 func (q *Queries) SaveHeartRate(ctx context.Context, arg SaveHeartRateParams) error {
@@ -278,8 +274,8 @@ INSERT INTO readyscore (date, score) VALUES ($1, $2) ON CONFLICT (date) DO UPDAT
 `
 
 type SaveReadyScoreParams struct {
-	Date  time.Time
-	Score int
+	Date  time.Time `json:"date"`
+	Score int       `json:"score"`
 }
 
 func (q *Queries) SaveReadyScore(ctx context.Context, arg SaveReadyScoreParams) error {
@@ -292,12 +288,12 @@ INSERT INTO sleep (date, rating, total_sleep, deep_sleep, light_sleep, rem_sleep
 `
 
 type SaveSleepParams struct {
-	Date       time.Time
-	Rating     int64
-	TotalSleep int
-	DeepSleep  int
-	LightSleep int
-	RemSleep   int
+	Date       time.Time `json:"date"`
+	Rating     int64     `json:"rating"`
+	TotalSleep int       `json:"total_sleep"`
+	DeepSleep  int       `json:"deep_sleep"`
+	LightSleep int       `json:"light_sleep"`
+	RemSleep   int       `json:"rem_sleep"`
 }
 
 func (q *Queries) SaveSleep(ctx context.Context, arg SaveSleepParams) error {
@@ -317,8 +313,8 @@ INSERT INTO spo2 (date, average_spo2) VALUES ($1, $2) ON CONFLICT (date) DO UPDA
 `
 
 type SaveSpo2Params struct {
-	Date        time.Time
-	AverageSpo2 float64
+	Date        time.Time `json:"date"`
+	AverageSpo2 float64   `json:"average_spo2"`
 }
 
 func (q *Queries) SaveSpo2(ctx context.Context, arg SaveSpo2Params) error {
@@ -331,8 +327,8 @@ INSERT INTO stress (date, high_stress_duration) VALUES ($1, $2) ON CONFLICT (dat
 `
 
 type SaveStressParams struct {
-	Date               time.Time
-	HighStressDuration int
+	Date               time.Time `json:"date"`
+	HighStressDuration int       `json:"high_stress_duration"`
 }
 
 func (q *Queries) SaveStress(ctx context.Context, arg SaveStressParams) error {
@@ -357,23 +353,23 @@ LIMIT $3
 `
 
 type SleepsParams struct {
-	QueryType string
-	InputID   int64
-	RowLimit  int32
+	QueryType string `json:"query_type"`
+	InputID   int64  `json:"input_id"`
+	RowLimit  int32  `json:"row_limit"`
 }
 
 type SleepsRow struct {
-	ID               int64
-	Date             time.Time
-	Rating           int64
-	TotalSleep       int
-	DeepSleep        int
-	LightSleep       int
-	RemSleep         int
-	CreatedTimestamp time.Time
-	UpdatedTimestamp time.Time
-	PreviousID       int64
-	NextID           int64
+	ID               int64     `json:"id"`
+	Date             time.Time `json:"date"`
+	Rating           int64     `json:"rating"`
+	TotalSleep       int       `json:"total_sleep"`
+	DeepSleep        int       `json:"deep_sleep"`
+	LightSleep       int       `json:"light_sleep"`
+	RemSleep         int       `json:"rem_sleep"`
+	CreatedTimestamp time.Time `json:"created_timestamp"`
+	UpdatedTimestamp time.Time `json:"updated_timestamp"`
+	PreviousID       int64     `json:"previous_id"`
+	NextID           int64     `json:"next_id"`
 }
 
 func (q *Queries) Sleeps(ctx context.Context, arg SleepsParams) ([]SleepsRow, error) {

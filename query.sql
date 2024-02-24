@@ -1,14 +1,21 @@
 -- name: SaveSleep :exec
 INSERT INTO sleep (date, rating, total_sleep, deep_sleep, light_sleep, rem_sleep) VALUES ($1, $2, $3, $4, $5, $6) ON CONFLICT (date) DO UPDATE SET total_sleep = EXCLUDED.total_sleep, rating = EXCLUDED.rating, light_sleep = EXCLUDED.light_sleep, deep_sleep = EXCLUDED.deep_sleep, rem_sleep = EXCLUDED.rem_sleep;
 
--- name: GetSleep :many
-SELECT * FROM sleep WHERE id = $1;
+-- name: GetSleep :one
+SELECT *
+FROM sleep
+WHERE id = $1;
 
--- name: GetSleepByDate :many
-SELECT * FROM sleep WHERE date = $1;
+-- name: GetSleepByDate :one
+SELECT *
+FROM sleep
+WHERE date = $1;
 
--- name: GetSleepDateById :many
-SELECT date FROM sleep WHERE id = $1;
+-- name: GetSleeps :many
+SELECT *
+FROM sleep
+ORDER BY date DESC
+LIMIT sqlc.arg(row_limit) OFFSET sqlc.arg(row_offset);
 
 -- name: Sleeps :many
 SELECT * FROM (

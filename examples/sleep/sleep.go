@@ -16,6 +16,8 @@ type SleepList struct {
 	PreviousToken string               `json:"previous_token"`
 }
 
+type SleepData austinapi_db.SleepsRow
+
 func main() {
 
 	populateRandom()

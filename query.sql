@@ -17,22 +17,6 @@ FROM sleep
 ORDER BY date DESC
 LIMIT sqlc.arg(row_limit) OFFSET sqlc.arg(row_offset);
 
--- name: Sleeps :many
-SELECT * FROM (
-  SELECT *,
-         CAST(COALESCE(LAG(id) OVER (ORDER BY date DESC), -1) AS BIGINT) AS previous_id,
-         CAST(COALESCE(LEAD(id) OVER (ORDER BY date DESC), -1) AS BIGINT) AS next_id
-  FROM sleep
-) sleeps
-WHERE CASE
-          WHEN 'NEXT' = sqlc.arg(query_type)::text THEN date <= (SELECT date FROM sleep AS SLP WHERE SLP.id = sqlc.arg(input_id))
-          WHEN 'PREVIOUS' = sqlc.arg(query_type)::text THEN date >= (SELECT date FROM sleep AS SLP WHERE SLP.id = sqlc.arg(input_id))
-          ELSE true
-          END
-ORDER BY date DESC
-LIMIT sqlc.arg(row_limit)
-;
-
 -- name: SaveReadyScore :exec
 INSERT INTO readyscore (date, score) VALUES ($1, $2) ON CONFLICT (date) DO UPDATE SET score = EXCLUDED.score;
 

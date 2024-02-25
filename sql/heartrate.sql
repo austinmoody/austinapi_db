@@ -9,7 +9,7 @@ CREATE TABLE heartrate (
     PRIMARY KEY (id)
 );
 
-CREATE INDEX idx_heartrate_date ON heartrate(date);
+CREATE UNIQUE INDEX idx_heartrate_date ON heartrate(date);
 ALTER TABLE heartrate ADD CONSTRAINT unique_heartrate_date UNIQUE(date);
 
 CREATE OR REPLACE FUNCTION update_heartrate_updated_timestamp()

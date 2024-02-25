@@ -7,7 +7,7 @@ CREATE TABLE spo2 (
     PRIMARY KEY (id)
 );
 
-CREATE INDEX idx_spo2_date ON spo2(date);
+CREATE UNIQUE INDEX idx_spo2_date ON spo2(date);
 ALTER TABLE spo2 ADD CONSTRAINT unique_spo2_date UNIQUE(date);
 
 CREATE OR REPLACE FUNCTION update_spo2_updated_timestamp()

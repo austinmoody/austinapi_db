@@ -7,7 +7,7 @@ CREATE TABLE stress (
     PRIMARY KEY (id)
 );
 
-CREATE INDEX idx_stress_date ON stress(date);
+CREATE UNIQUE INDEX idx_stress_date ON stress(date);
 ALTER TABLE stress ADD CONSTRAINT unique_stress_date UNIQUE(date);
 
 CREATE OR REPLACE FUNCTION update_stress_updated_timestamp()

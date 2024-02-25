@@ -12,7 +12,7 @@ create table sleep
     PRIMARY KEY (id)
 );
 
-CREATE INDEX idx_sleep_date ON sleep(date);
+CREATE UNIQUE INDEX idx_sleep_date_unq ON sleep(date);
 ALTER TABLE sleep ADD CONSTRAINT unique_sleep_date UNIQUE(date);
 
 CREATE OR REPLACE FUNCTION update_sleep_updated_timestamp()

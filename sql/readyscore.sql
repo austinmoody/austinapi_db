@@ -6,7 +6,7 @@ CREATE TABLE readyscore (
     updated_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     PRIMARY KEY (id)
 );
-CREATE INDEX idx_readyscore_date ON readyscore(date);
+CREATE UNIQUE INDEX idx_readyscore_date ON readyscore(date);
 ALTER TABLE readyscore ADD CONSTRAINT unique_readyscore_date UNIQUE(date);
 
 CREATE OR REPLACE FUNCTION update_readyscore_updated_timestamp()

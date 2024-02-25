@@ -10,8 +10,118 @@ import (
 	"time"
 )
 
+const getHeartRate = `-- name: GetHeartRate :many
+SELECT id, date, high, low, average, created_timestamp, updated_timestamp
+FROM heartrate
+WHERE id = $1
+`
+
+func (q *Queries) GetHeartRate(ctx context.Context, id int64) ([]Heartrate, error) {
+	rows, err := q.db.Query(ctx, getHeartRate, id)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []Heartrate{}
+	for rows.Next() {
+		var i Heartrate
+		if err := rows.Scan(
+			&i.ID,
+			&i.Date,
+			&i.High,
+			&i.Low,
+			&i.Average,
+			&i.CreatedTimestamp,
+			&i.UpdatedTimestamp,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getHeartRateByDate = `-- name: GetHeartRateByDate :many
+SELECT id, date, high, low, average, created_timestamp, updated_timestamp
+FROM heartrate
+WHERE date = $1
+`
+
+func (q *Queries) GetHeartRateByDate(ctx context.Context, date time.Time) ([]Heartrate, error) {
+	rows, err := q.db.Query(ctx, getHeartRateByDate, date)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []Heartrate{}
+	for rows.Next() {
+		var i Heartrate
+		if err := rows.Scan(
+			&i.ID,
+			&i.Date,
+			&i.High,
+			&i.Low,
+			&i.Average,
+			&i.CreatedTimestamp,
+			&i.UpdatedTimestamp,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getHeartRates = `-- name: GetHeartRates :many
+SELECT id, date, high, low, average, created_timestamp, updated_timestamp
+FROM heartrate
+ORDER BY date DESC
+LIMIT $2 OFFSET $1
+`
+
+type GetHeartRatesParams struct {
+	RowOffset int32 `json:"row_offset"`
+	RowLimit  int32 `json:"row_limit"`
+}
+
+func (q *Queries) GetHeartRates(ctx context.Context, arg GetHeartRatesParams) ([]Heartrate, error) {
+	rows, err := q.db.Query(ctx, getHeartRates, arg.RowOffset, arg.RowLimit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []Heartrate{}
+	for rows.Next() {
+		var i Heartrate
+		if err := rows.Scan(
+			&i.ID,
+			&i.Date,
+			&i.High,
+			&i.Low,
+			&i.Average,
+			&i.CreatedTimestamp,
+			&i.UpdatedTimestamp,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getReadyScore = `-- name: GetReadyScore :many
-SELECT id, date, score, created_timestamp, updated_timestamp FROM readyscore WHERE id = $1
+SELECT id, date, score, created_timestamp, updated_timestamp
+FROM readyscore
+WHERE id = $1
 `
 
 func (q *Queries) GetReadyScore(ctx context.Context, id int64) ([]Readyscore, error) {
@@ -41,7 +151,9 @@ func (q *Queries) GetReadyScore(ctx context.Context, id int64) ([]Readyscore, er
 }
 
 const getReadyScoreByDate = `-- name: GetReadyScoreByDate :many
-SELECT id, date, score, created_timestamp, updated_timestamp FROM readyscore WHERE date = $1
+SELECT id, date, score, created_timestamp, updated_timestamp
+FROM readyscore
+WHERE date = $1
 `
 
 func (q *Queries) GetReadyScoreByDate(ctx context.Context, date time.Time) ([]Readyscore, error) {
@@ -70,12 +182,20 @@ func (q *Queries) GetReadyScoreByDate(ctx context.Context, date time.Time) ([]Re
 	return items, nil
 }
 
-const getReadyScoreById = `-- name: GetReadyScoreById :many
-SELECT id, date, score, created_timestamp, updated_timestamp FROM readyscore WHERE id = $1
+const getReadyScores = `-- name: GetReadyScores :many
+SELECT id, date, score, created_timestamp, updated_timestamp
+FROM readyscore
+ORDER BY date DESC
+LIMIT $2 OFFSET $1
 `
 
-func (q *Queries) GetReadyScoreById(ctx context.Context, id int64) ([]Readyscore, error) {
-	rows, err := q.db.Query(ctx, getReadyScoreById, id)
+type GetReadyScoresParams struct {
+	RowOffset int32 `json:"row_offset"`
+	RowLimit  int32 `json:"row_limit"`
+}
+
+func (q *Queries) GetReadyScores(ctx context.Context, arg GetReadyScoresParams) ([]Readyscore, error) {
+	rows, err := q.db.Query(ctx, getReadyScores, arg.RowOffset, arg.RowLimit)
 	if err != nil {
 		return nil, err
 	}
@@ -100,55 +220,31 @@ func (q *Queries) GetReadyScoreById(ctx context.Context, id int64) ([]Readyscore
 	return items, nil
 }
 
-const getReadyScores = `-- name: GetReadyScores :many
-SELECT id, date, score, created_timestamp, updated_timestamp, previous_id, next_id FROM (
-      SELECT id, date, score, created_timestamp, updated_timestamp,
-             CAST(COALESCE(LAG(id) OVER (ORDER BY date DESC), -1) AS BIGINT) AS previous_id,
-             CAST(COALESCE(LEAD(id) OVER (ORDER BY date DESC), -1) AS BIGINT) AS next_id
-      FROM readyscore
-) listreadyscores
-WHERE CASE
-          WHEN 'NEXT' = $1::text THEN date <= (SELECT date FROM readyscore AS SLP WHERE SLP.id = $2)
-          WHEN 'PREVIOUS' = $1::text THEN date >= (SELECT date FROM readyscore AS SLP WHERE SLP.id = $2)
-          ELSE true
-          END
-ORDER BY date DESC
-LIMIT $3
+const getSleep = `-- name: GetSleep :many
+SELECT id, date, rating, total_sleep, deep_sleep, light_sleep, rem_sleep, created_timestamp, updated_timestamp
+FROM sleep
+WHERE id = $1
 `
 
-type GetReadyScoresParams struct {
-	QueryType string `json:"query_type"`
-	InputID   int64  `json:"input_id"`
-	RowLimit  int32  `json:"row_limit"`
-}
-
-type GetReadyScoresRow struct {
-	ID               int64     `json:"id"`
-	Date             time.Time `json:"date"`
-	Score            int       `json:"score"`
-	CreatedTimestamp time.Time `json:"created_timestamp"`
-	UpdatedTimestamp time.Time `json:"updated_timestamp"`
-	PreviousID       int64     `json:"previous_id"`
-	NextID           int64     `json:"next_id"`
-}
-
-func (q *Queries) GetReadyScores(ctx context.Context, arg GetReadyScoresParams) ([]GetReadyScoresRow, error) {
-	rows, err := q.db.Query(ctx, getReadyScores, arg.QueryType, arg.InputID, arg.RowLimit)
+func (q *Queries) GetSleep(ctx context.Context, id int64) ([]Sleep, error) {
+	rows, err := q.db.Query(ctx, getSleep, id)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	items := []GetReadyScoresRow{}
+	items := []Sleep{}
 	for rows.Next() {
-		var i GetReadyScoresRow
+		var i Sleep
 		if err := rows.Scan(
 			&i.ID,
 			&i.Date,
-			&i.Score,
+			&i.Rating,
+			&i.TotalSleep,
+			&i.DeepSleep,
+			&i.LightSleep,
+			&i.RemSleep,
 			&i.CreatedTimestamp,
 			&i.UpdatedTimestamp,
-			&i.PreviousID,
-			&i.NextID,
 		); err != nil {
 			return nil, err
 		}
@@ -160,50 +256,40 @@ func (q *Queries) GetReadyScores(ctx context.Context, arg GetReadyScoresParams) 
 	return items, nil
 }
 
-const getSleep = `-- name: GetSleep :one
-SELECT id, date, rating, total_sleep, deep_sleep, light_sleep, rem_sleep, created_timestamp, updated_timestamp
-FROM sleep
-WHERE id = $1
-`
-
-func (q *Queries) GetSleep(ctx context.Context, id int64) (Sleep, error) {
-	row := q.db.QueryRow(ctx, getSleep, id)
-	var i Sleep
-	err := row.Scan(
-		&i.ID,
-		&i.Date,
-		&i.Rating,
-		&i.TotalSleep,
-		&i.DeepSleep,
-		&i.LightSleep,
-		&i.RemSleep,
-		&i.CreatedTimestamp,
-		&i.UpdatedTimestamp,
-	)
-	return i, err
-}
-
-const getSleepByDate = `-- name: GetSleepByDate :one
+const getSleepByDate = `-- name: GetSleepByDate :many
 SELECT id, date, rating, total_sleep, deep_sleep, light_sleep, rem_sleep, created_timestamp, updated_timestamp
 FROM sleep
 WHERE date = $1
 `
 
-func (q *Queries) GetSleepByDate(ctx context.Context, date time.Time) (Sleep, error) {
-	row := q.db.QueryRow(ctx, getSleepByDate, date)
-	var i Sleep
-	err := row.Scan(
-		&i.ID,
-		&i.Date,
-		&i.Rating,
-		&i.TotalSleep,
-		&i.DeepSleep,
-		&i.LightSleep,
-		&i.RemSleep,
-		&i.CreatedTimestamp,
-		&i.UpdatedTimestamp,
-	)
-	return i, err
+func (q *Queries) GetSleepByDate(ctx context.Context, date time.Time) ([]Sleep, error) {
+	rows, err := q.db.Query(ctx, getSleepByDate, date)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []Sleep{}
+	for rows.Next() {
+		var i Sleep
+		if err := rows.Scan(
+			&i.ID,
+			&i.Date,
+			&i.Rating,
+			&i.TotalSleep,
+			&i.DeepSleep,
+			&i.LightSleep,
+			&i.RemSleep,
+			&i.CreatedTimestamp,
+			&i.UpdatedTimestamp,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const getSleeps = `-- name: GetSleeps :many
@@ -235,6 +321,210 @@ func (q *Queries) GetSleeps(ctx context.Context, arg GetSleepsParams) ([]Sleep, 
 			&i.DeepSleep,
 			&i.LightSleep,
 			&i.RemSleep,
+			&i.CreatedTimestamp,
+			&i.UpdatedTimestamp,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getSpo2 = `-- name: GetSpo2 :many
+SELECT id, date, average_spo2, created_timestamp, updated_timestamp
+FROM spo2
+WHERE id = $1
+`
+
+func (q *Queries) GetSpo2(ctx context.Context, id int64) ([]Spo2, error) {
+	rows, err := q.db.Query(ctx, getSpo2, id)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []Spo2{}
+	for rows.Next() {
+		var i Spo2
+		if err := rows.Scan(
+			&i.ID,
+			&i.Date,
+			&i.AverageSpo2,
+			&i.CreatedTimestamp,
+			&i.UpdatedTimestamp,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getSpo2ByDate = `-- name: GetSpo2ByDate :many
+SELECT id, date, average_spo2, created_timestamp, updated_timestamp
+FROM spo2
+WHERE date = $1
+`
+
+func (q *Queries) GetSpo2ByDate(ctx context.Context, date time.Time) ([]Spo2, error) {
+	rows, err := q.db.Query(ctx, getSpo2ByDate, date)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []Spo2{}
+	for rows.Next() {
+		var i Spo2
+		if err := rows.Scan(
+			&i.ID,
+			&i.Date,
+			&i.AverageSpo2,
+			&i.CreatedTimestamp,
+			&i.UpdatedTimestamp,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getSpo2s = `-- name: GetSpo2s :many
+SELECT id, date, average_spo2, created_timestamp, updated_timestamp
+FROM spo2
+ORDER BY date DESC
+LIMIT $2 OFFSET $1
+`
+
+type GetSpo2sParams struct {
+	RowOffset int32 `json:"row_offset"`
+	RowLimit  int32 `json:"row_limit"`
+}
+
+func (q *Queries) GetSpo2s(ctx context.Context, arg GetSpo2sParams) ([]Spo2, error) {
+	rows, err := q.db.Query(ctx, getSpo2s, arg.RowOffset, arg.RowLimit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []Spo2{}
+	for rows.Next() {
+		var i Spo2
+		if err := rows.Scan(
+			&i.ID,
+			&i.Date,
+			&i.AverageSpo2,
+			&i.CreatedTimestamp,
+			&i.UpdatedTimestamp,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getStress = `-- name: GetStress :many
+SELECT id, date, high_stress_duration, created_timestamp, updated_timestamp
+FROM stress
+WHERE id = $1
+`
+
+func (q *Queries) GetStress(ctx context.Context, id int64) ([]Stress, error) {
+	rows, err := q.db.Query(ctx, getStress, id)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []Stress{}
+	for rows.Next() {
+		var i Stress
+		if err := rows.Scan(
+			&i.ID,
+			&i.Date,
+			&i.HighStressDuration,
+			&i.CreatedTimestamp,
+			&i.UpdatedTimestamp,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getStressByDate = `-- name: GetStressByDate :many
+SELECT id, date, high_stress_duration, created_timestamp, updated_timestamp
+FROM stress
+WHERE date = $1
+`
+
+func (q *Queries) GetStressByDate(ctx context.Context, date time.Time) ([]Stress, error) {
+	rows, err := q.db.Query(ctx, getStressByDate, date)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []Stress{}
+	for rows.Next() {
+		var i Stress
+		if err := rows.Scan(
+			&i.ID,
+			&i.Date,
+			&i.HighStressDuration,
+			&i.CreatedTimestamp,
+			&i.UpdatedTimestamp,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getStresses = `-- name: GetStresses :many
+SELECT id, date, high_stress_duration, created_timestamp, updated_timestamp
+FROM stress
+ORDER BY date DESC
+LIMIT $2 OFFSET $1
+`
+
+type GetStressesParams struct {
+	RowOffset int32 `json:"row_offset"`
+	RowLimit  int32 `json:"row_limit"`
+}
+
+func (q *Queries) GetStresses(ctx context.Context, arg GetStressesParams) ([]Stress, error) {
+	rows, err := q.db.Query(ctx, getStresses, arg.RowOffset, arg.RowLimit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []Stress{}
+	for rows.Next() {
+		var i Stress
+		if err := rows.Scan(
+			&i.ID,
+			&i.Date,
+			&i.HighStressDuration,
 			&i.CreatedTimestamp,
 			&i.UpdatedTimestamp,
 		); err != nil {
@@ -334,72 +624,4 @@ type SaveStressParams struct {
 func (q *Queries) SaveStress(ctx context.Context, arg SaveStressParams) error {
 	_, err := q.db.Exec(ctx, saveStress, arg.Date, arg.HighStressDuration)
 	return err
-}
-
-const sleeps = `-- name: Sleeps :many
-SELECT id, date, rating, total_sleep, deep_sleep, light_sleep, rem_sleep, created_timestamp, updated_timestamp, previous_id, next_id FROM (
-  SELECT id, date, rating, total_sleep, deep_sleep, light_sleep, rem_sleep, created_timestamp, updated_timestamp,
-         CAST(COALESCE(LAG(id) OVER (ORDER BY date DESC), -1) AS BIGINT) AS previous_id,
-         CAST(COALESCE(LEAD(id) OVER (ORDER BY date DESC), -1) AS BIGINT) AS next_id
-  FROM sleep
-) sleeps
-WHERE CASE
-          WHEN 'NEXT' = $1::text THEN date <= (SELECT date FROM sleep AS SLP WHERE SLP.id = $2)
-          WHEN 'PREVIOUS' = $1::text THEN date >= (SELECT date FROM sleep AS SLP WHERE SLP.id = $2)
-          ELSE true
-          END
-ORDER BY date DESC
-LIMIT $3
-`
-
-type SleepsParams struct {
-	QueryType string `json:"query_type"`
-	InputID   int64  `json:"input_id"`
-	RowLimit  int32  `json:"row_limit"`
-}
-
-type SleepsRow struct {
-	ID               int64     `json:"id"`
-	Date             time.Time `json:"date"`
-	Rating           int64     `json:"rating"`
-	TotalSleep       int       `json:"total_sleep"`
-	DeepSleep        int       `json:"deep_sleep"`
-	LightSleep       int       `json:"light_sleep"`
-	RemSleep         int       `json:"rem_sleep"`
-	CreatedTimestamp time.Time `json:"created_timestamp"`
-	UpdatedTimestamp time.Time `json:"updated_timestamp"`
-	PreviousID       int64     `json:"previous_id"`
-	NextID           int64     `json:"next_id"`
-}
-
-func (q *Queries) Sleeps(ctx context.Context, arg SleepsParams) ([]SleepsRow, error) {
-	rows, err := q.db.Query(ctx, sleeps, arg.QueryType, arg.InputID, arg.RowLimit)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	items := []SleepsRow{}
-	for rows.Next() {
-		var i SleepsRow
-		if err := rows.Scan(
-			&i.ID,
-			&i.Date,
-			&i.Rating,
-			&i.TotalSleep,
-			&i.DeepSleep,
-			&i.LightSleep,
-			&i.RemSleep,
-			&i.CreatedTimestamp,
-			&i.UpdatedTimestamp,
-			&i.PreviousID,
-			&i.NextID,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
 }

@@ -57,9 +57,9 @@ func DecodeObfuscatedInt(obfuscatedStr string) int32 {
 }
 
 func main() {
-	getSleep(56)
+	getSleep(5006)
 
-	getSleeps("MTAwNQ==")
+	//getSleeps("MTAwNQ==")
 }
 
 func getSleep(sleepId int64) {
@@ -79,7 +79,15 @@ func getSleep(sleepId int64) {
 		log.Fatalf("Issue getting sleep from database: %v", err)
 	}
 
-	jsonBytes, err := json.Marshal(result)
+	var sleep austinapi_db.Sleep
+	if len(result) != 1 {
+		log.Printf("Sleep not found with id '%v'", sleepId)
+		sleep = austinapi_db.Sleep{}
+	} else {
+		sleep = result[0]
+	}
+
+	jsonBytes, err := json.Marshal(sleep)
 	if err != nil {
 		log.Fatalf("issue with creating json: %v", err)
 	}

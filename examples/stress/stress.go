@@ -28,7 +28,7 @@ func populateRandom(numberOfRecords int) {
 	// Loop 5 times, randomly generate data
 	source := rand.NewSource(time.Now().UnixNano())
 	rng := rand.New(source)
-	for i := 0; i < 50; i++ {
+	for i := 0; i < numberOfRecords; i++ {
 		randomHours := rng.Intn(8674) + 1
 
 		params := austinapi_db.SaveStressParams{

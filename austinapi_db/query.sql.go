@@ -618,7 +618,7 @@ INSERT INTO stress (date, high_stress_duration) VALUES ($1, $2) ON CONFLICT (dat
 
 type SaveStressParams struct {
 	Date               time.Time `json:"date"`
-	HighStressDuration int       `json:"high_stress_duration"`
+	HighStressDuration int64     `json:"high_stress_duration"`
 }
 
 func (q *Queries) SaveStress(ctx context.Context, arg SaveStressParams) error {

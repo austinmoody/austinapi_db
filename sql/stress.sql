@@ -1,7 +1,7 @@
 CREATE TABLE stress (
     id BIGINT GENERATED ALWAYS AS IDENTITY,
     date DATE NOT NULL,
-    high_stress_duration INTEGER NOT NULL, -- milliseconds
+    high_stress_duration BIGINT NOT NULL, -- milliseconds
     created_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     updated_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     PRIMARY KEY (id)

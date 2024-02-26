@@ -49,7 +49,7 @@ type Spo2 struct {
 type Stress struct {
 	ID                 int64     `json:"id"`
 	Date               time.Time `json:"date"`
-	HighStressDuration int       `json:"high_stress_duration"`
+	HighStressDuration int64     `json:"high_stress_duration"`
 	CreatedTimestamp   time.Time `json:"created_timestamp"`
 	UpdatedTimestamp   time.Time `json:"updated_timestamp"`
 }

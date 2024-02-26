@@ -33,7 +33,7 @@ func populateRandom(numberOfRecords int) {
 
 		params := austinapi_db.SaveStressParams{
 			Date:               time.Now().Add(time.Hour * (-1 * time.Duration(randomHours))),
-			HighStressDuration: rng.Intn(1000) - 1,
+			HighStressDuration: rng.Int63n(1000) - 1,
 		}
 
 		err = apiDb.SaveStress(ctx, params)
